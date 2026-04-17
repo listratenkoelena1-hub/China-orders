@@ -93,8 +93,8 @@ th {
 
 <div class="top-bar">
     Название: <input id="orderName">
-    Shipping (¥): <input id="shipping" type="number">
-    Курс: <input id="rate" type="number" value="0.2">
+Shipping (¥): <input id="shipping" type="number" oninput="recalc()">
+Курс: <input id="rate" type="number" value="0.2" oninput="recalc()">
     <button onclick="recalc()">Рассчитать</button>
 </div>
 
@@ -122,22 +122,26 @@ th {
 </div>
 
 <div class="tabs" id="tabs"></div>
+<div style="padding: 10px; background: white; border-top: 1px solid #ddd;">
+    <button onclick="addRow()">Добавить строку</button>
+</div>
 
+<div class="tabs" id="tabs"></div>
 <input type="file" id="fileInput" accept="image/*" style="display:none">
 
 <script>
 let orders = [];
 let current = 0;
-
-function createRows() {
+let currentRowCount = 20;
+function createRows(rowCount = 20) {
     const tbody = document.getElementById('tbody');
     tbody.innerHTML = '';
 
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < rowCount; i++) {
         let tr = document.createElement('tr');
 
         tr.innerHTML = `
-            <td>${i+1}</td>
+            <td>${i + 1}</td>
             <td contenteditable></td>
             <td class="photo-cell" onclick="uploadPhoto(this)"></td>
             <td contenteditable oninput="recalc()"></td>
@@ -214,20 +218,44 @@ function recalc() {
 
     const tfoot = document.getElementById('tfoot');
 
-    tfoot.innerHTML = `
-        <tr>
-            <td colspan="7">ИТОГО</td>
-            <td>${totalYuan.toFixed(2)}</td>
-            <td class="${Math.abs(totalShip - shipping) > 1 ? 'red' : ''}">
-                ${totalShip.toFixed(2)}
-            </td>
-            <td></td>
-            <td>${totalCAD.toFixed(2)}</td>
-            <td></td>
-        </tr>
-    `;
+tfoot.innerHTML = `
+    <tr style="background:#ececec; font-weight:bold; border-top:2px solid #888;">
+        <td colspan="5">ИТОГО</td>
+        <td>${rows.length ? [...rows].reduce((sum, r) => sum + (parseFloat(r.children[5].innerText) || 0), 0).toFixed(2) : '0.00'}</td>
+        <td>${rows.length ? [...rows].reduce((sum, r) => sum + (parseFloat(r.children[6].innerText) || 0), 0).toFixed(2) : '0.00'}</td>
+        <td>${totalYuan.toFixed(2)}</td>
+        <td class="${Math.abs(totalShip - shipping) > 1 ? 'red' : ''}">
+            ${totalShip.toFixed(2)}
+        </td>
+        <td>${rows.length ? [...rows].reduce((sum, r) => sum + (parseFloat(r.children[9].innerText) || 0), 0).toFixed(2) : '0.00'}</td>
+        <td>${totalCAD.toFixed(2)}</td>
+        <td></td>
+    </tr>
+`;
 }
+function addRow() {
+    const tbody = document.getElementById('tbody');
+    currentRowCount++;
 
+    let tr = document.createElement('tr');
+
+    tr.innerHTML = `
+        <td>${currentRowCount}</td>
+        <td contenteditable></td>
+        <td class="photo-cell" onclick="uploadPhoto(this)"></td>
+        <td contenteditable oninput="recalc()"></td>
+        <td contenteditable oninput="recalc()"></td>
+        <td></td>
+        <td contenteditable oninput="recalc()"></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+    `;
+
+    tbody.appendChild(tr);
+}
 function renderTabs() {
     const tabs = document.getElementById('tabs');
     tabs.innerHTML = '';
