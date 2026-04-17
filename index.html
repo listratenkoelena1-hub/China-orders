@@ -43,6 +43,15 @@ th, td {
     text-align: center;
 }
 
+td[contenteditable] {
+    background: #fffef2;
+}
+
+td:not([contenteditable]):not(.photo-cell) {
+    background: #f3f3f3;
+    color: #555;
+}
+
 th {
     position: sticky;
     top: 0;
@@ -95,7 +104,6 @@ th {
     Название: <input id="orderName">
 Shipping (¥): <input id="shipping" type="number" oninput="recalc()">
 Курс: <input id="rate" type="number" value="0.2" oninput="recalc()">
-    <button onclick="recalc()">Рассчитать</button>
 </div>
 
 <div class="table-container">
@@ -121,15 +129,26 @@ Shipping (¥): <input id="shipping" type="number" oninput="recalc()">
 </table>
 </div>
 
-<div class="tabs" id="tabs"></div>
 <div style="padding: 10px; background: white; border-top: 1px solid #ddd;">
     <button onclick="addRow()">Добавить строку</button>
 </div>
-
 <div class="tabs" id="tabs"></div>
 <input type="file" id="fileInput" accept="image/*" style="display:none">
-
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCiVbCdacftqNjfJbiRr7DyXgGs4EQzi0M",
+  authDomain: "china-orders-firebase.firebaseapp.com",
+  projectId: "china-orders-firebase",
+  storageBucket: "china-orders-firebase.firebasestorage.app",
+  messagingSenderId: "395464576684",
+  appId: "1:395464576684:web:930081fad3df6d1c369909",
+  measurementId: "G-SVK0C8SZV7"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();    
 let orders = [];
 let current = 0;
 let currentRowCount = 20;
@@ -255,6 +274,7 @@ function addRow() {
     `;
 
     tbody.appendChild(tr);
+    recalc();
 }
 function renderTabs() {
     const tabs = document.getElementById('tabs');
@@ -287,9 +307,11 @@ function switchTab(i) {
 }
 
 function loadTab() {
+    currentRowCount = 20;
     document.getElementById('orderName').value = orders[current].name || '';
-    createRows();
+    createRows(currentRowCount);
     renderTabs();
+    recalc();
 }
 
 document.getElementById('orderName').oninput = e => {
@@ -298,6 +320,7 @@ document.getElementById('orderName').oninput = e => {
 };
 
 addTab();
+    
 </script>
 
 </body>
