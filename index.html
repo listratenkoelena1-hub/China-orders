@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Заказы Китай</title>
+
+<style>
+body {
+    font-family: Arial;
+    margin: 0;
+    background: #f5f5f5;
+}
+
+.top-bar {
+    padding: 10px;
+    background: white;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    border-bottom: 1px solid #ddd;
+}
+
+input {
+    padding: 5px;
+    margin-right: 10px;
+}
+
+.table-container {
+    overflow: auto;
+    height: calc(100vh - 120px);
+}
+
+table {
+    border-collapse: collapse;
+    min-width: 1200px;
+    background: white;
+}
+
+th, td {
+    border: 1px solid #ccc;
+    padding: 5px;
+    text-align: center;
+}
+
+th {
+    position: sticky;
+    top: 0;
+    background: #eee;
+    z-index: 5;
+}
+
+.photo-cell {
+    width: 100px;
+    height: 120px;
+    cursor: pointer;
+}
+
+.photo-cell img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.tabs {
+    display: flex;
+    overflow-x: auto;
+    background: white;
+    border-top: 1px solid #ccc;
+}
+
+.tab {
+    padding: 10px;
+    border-right: 1px solid #ddd;
+    cursor: pointer;
+}
+
+.tab.active {
+    background: #ddd;
+}
+
+.tab.add {
+    font-weight: bold;
+}
+
+.red {
+    background: #ffcccc;
+}
+</style>
+</head>
+
+<body>
+
+<div class="top-bar">
+    Название: <input id="orderName">
+    Shipping (¥): <input id="shipping" type="number">
+    Курс: <input id="rate" type="number" value="0.2">
+    <button onclick="recalc()">Рассчитать</button>
+</div>
+
+<div class="table-container">
+<table id="table">
+<thead>
+<tr>
+<th>№</th>
+<th>Размер</th>
+<th>Фото</th>
+<th>Кол-во</th>
+<th>Цена ¥</th>
+<th>Сумма ¥</th>
+<th>Дост ¥</th>
+<th>Итого ¥</th>
+<th>Shipping ¥</th>
+<th>Итого+Ship</th>
+<th>CAD</th>
+<th>За шт CAD</th>
+</tr>
+</thead>
+<tbody id="tbody"></tbody>
+<tfoot id="tfoot"></tfoot>
+</table>
+</div>
+
+<div class="tabs" id="tabs"></div>
+
+<input type="file" id="fileInput" accept="image/*" style="display:none">
+
+<script>
+let orders = [];
+let current = 0;
+
+function createRows() {
+    const tbody = document.getElementById('tbody');
+    tbody.innerHTML = '';
+
+    for (let i = 0; i < 20; i++) {
+        let tr = document.createElement('tr');
+
+        tr.innerHTML = `
+            <td>${i+1}</td>
+            <td contenteditable></td>
+            <td class="photo-cell" onclick="uploadPhoto(this)"></td>
+            <td contenteditable oninput="recalc()"></td>
+            <td contenteditable oninput="recalc()"></td>
+            <td></td>
+            <td contenteditable oninput="recalc()"></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+        `;
+
+        tbody.appendChild(tr);
+    }
+}
+
+function uploadPhoto(cell) {
+    const input = document.getElementById('fileInput');
+    input.onchange = e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        cell.innerHTML = '';
+        cell.appendChild(img);
+    };
+    input.click();
+}
+
+function recalc() {
+    const rows = document.querySelectorAll('#tbody tr');
+    let totalYuan = 0;
+
+    rows.forEach(r => {
+        let qty = parseFloat(r.children[3].innerText) || 0;
+        let price = parseFloat(r.children[4].innerText) || 0;
+        let delivery = parseFloat(r.children[6].innerText) || 0;
+
+        let sum = qty * price;
+        let total = sum + delivery;
+
+        r.children[5].innerText = sum.toFixed(2);
+        r.children[7].innerText = total.toFixed(2);
+
+        totalYuan += total;
+    });
+
+    let shipping = parseFloat(document.getElementById('shipping').value) || 0;
+    let rate = parseFloat(document.getElementById('rate').value) || 0;
+
+    let coef = totalYuan ? shipping / totalYuan : 0;
+
+    let totalShip = 0;
+    let totalCAD = 0;
+
+    rows.forEach(r => {
+        let total = parseFloat(r.children[7].innerText) || 0;
+        let qty = parseFloat(r.children[3].innerText) || 0;
+
+        let ship = total * coef;
+        let final = total + ship;
+        let cad = final * rate;
+        let per = qty ? cad / qty : 0;
+
+        r.children[8].innerText = ship.toFixed(2);
+        r.children[9].innerText = final.toFixed(2);
+        r.children[10].innerText = cad.toFixed(2);
+        r.children[11].innerText = per.toFixed(2);
+
+        totalShip += ship;
+        totalCAD += cad;
+    });
+
+    const tfoot = document.getElementById('tfoot');
+
+    tfoot.innerHTML = `
+        <tr>
+            <td colspan="7">ИТОГО</td>
+            <td>${totalYuan.toFixed(2)}</td>
+            <td class="${Math.abs(totalShip - shipping) > 1 ? 'red' : ''}">
+                ${totalShip.toFixed(2)}
+            </td>
+            <td></td>
+            <td>${totalCAD.toFixed(2)}</td>
+            <td></td>
+        </tr>
+    `;
+}
+
+function renderTabs() {
+    const tabs = document.getElementById('tabs');
+    tabs.innerHTML = '';
+
+    orders.forEach((o, i) => {
+        let div = document.createElement('div');
+        div.className = 'tab ' + (i === current ? 'active' : '');
+        div.innerText = o.name || 'Без названия';
+        div.onclick = () => switchTab(i);
+        tabs.appendChild(div);
+    });
+
+    let add = document.createElement('div');
+    add.className = 'tab add';
+    add.innerText = '+';
+    add.onclick = addTab;
+    tabs.appendChild(add);
+}
+
+function addTab() {
+    orders.push({name: ''});
+    current = orders.length - 1;
+    loadTab();
+}
+
+function switchTab(i) {
+    current = i;
+    loadTab();
+}
+
+function loadTab() {
+    document.getElementById('orderName').value = orders[current].name || '';
+    createRows();
+    renderTabs();
+}
+
+document.getElementById('orderName').oninput = e => {
+    orders[current].name = e.target.value;
+    renderTabs();
+};
+
+addTab();
+</script>
+
+</body>
+</html>
