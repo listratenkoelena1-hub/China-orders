@@ -182,18 +182,47 @@ function createRows(rowCount = 20) {
 
 function uploadPhoto(cell) {
     const input = document.getElementById('fileInput');
+
     input.onchange = e => {
         const file = e.target.files[0];
         if (!file) return;
-        const img = document.createElement('img');
-        img.src = URL.createObjectURL(file);
-        cell.innerHTML = '';
-        cell.appendChild(img);
-        autoSaveOrder();
+
+        const reader = new FileReader();
+
+        reader.onload = event => {
+            const image = new Image();
+
+            image.onload = () => {
+                const canvas = document.createElement('canvas');
+
+                const maxWidth = 300;
+                const scale = maxWidth / image.width;
+
+                canvas.width = maxWidth;
+                canvas.height = image.height * scale;
+
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+                const compressedImage = canvas.toDataURL('image/jpeg', 0.6);
+
+                const img = document.createElement('img');
+                img.src = compressedImage;
+
+                cell.innerHTML = '';
+                cell.appendChild(img);
+
+                autoSaveOrder();
+            };
+
+            image.src = event.target.result;
+        };
+
+        reader.readAsDataURL(file);
     };
+
     input.click();
 }
-
 function recalc() {
     const rows = document.querySelectorAll('#tbody tr');
     let totalYuan = 0;
