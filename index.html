@@ -149,7 +149,7 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();    
-let orders = [];
+let orders = JSON.parse(localStorage.getItem('orders')) || [];
 let current = 0;
 let currentRowCount = 20;
 let currentOrderId = null;
@@ -335,17 +335,72 @@ function addTab() {
         firebaseId: null
     });
 
+    localStorage.setItem('orders', JSON.stringify(orders));
+
     current = orders.length - 1;
     currentOrderId = null;
 
     loadTab();
+    renderTabs();
     autoSaveOrder();
 }
 
-function switchTab(i) {
+async function switchTab(i) {
     current = i;
     currentOrderId = orders[i].firebaseId || null;
-    loadTab();
+
+    renderTabs();
+
+    if (!currentOrderId) {
+        loadTab();
+        return;
+    }
+
+    try {
+        const doc = await db.collection('orders').doc(currentOrderId).get();
+
+        if (doc.exists) {
+            const data = doc.data();
+
+            document.getElementById('orderName').value = data.name || '';
+            document.getElementById('shipping').value = data.shipping || '';
+            document.getElementById('rate').value = data.rate || '';
+
+            currentRowCount = data.rowCount || 20;
+
+            const tbody = document.getElementById('tbody');
+            tbody.innerHTML = '';
+
+            for (let i = 0; i < currentRowCount; i++) {
+                const item = data.items?.[i] || {};
+
+                const row = document.createElement('tr');
+
+                row.innerHTML = `
+                    <td>${i + 1}</td>
+                    <td contenteditable>${item.size || ''}</td>
+                    <td class="photo-cell" onclick="uploadPhoto(this)">
+                        ${item.photo ? `<img src="${item.photo}">` : ''}
+                    </td>
+                    <td contenteditable oninput="recalc()">${item.quantity || ''}</td>
+                    <td contenteditable oninput="recalc()">${item.price || ''}</td>
+                    <td>${item.sum || '0.00'}</td>
+                    <td contenteditable oninput="recalc()">${item.chinaDelivery || ''}</td>
+                    <td>${item.totalYuan || '0.00'}</td>
+                    <td>${item.shipping || '0.00'}</td>
+                    <td>${item.finalYuan || '0.00'}</td>
+                    <td>${item.cad || '0.00'}</td>
+                    <td>${item.perItemCad || '0.00'}</td>
+                `;
+
+                tbody.appendChild(row);
+            }
+
+            recalc();
+        }
+    } catch (error) {
+        console.error(error);
+    }
 }
 function loadTab() {
     currentRowCount = 20;
@@ -357,6 +412,7 @@ function loadTab() {
 
 document.getElementById('orderName').oninput = e => {
     orders[current].name = e.target.value;
+    localStorage.setItem('orders', JSON.stringify(orders));
     renderTabs();
     autoSaveOrder();
 };
@@ -397,9 +453,12 @@ async function autoSaveOrder() {
 
     try {
         if (!currentOrderId) {
-            const docRef = await db.collection('orders').add(orderData);
-            currentOrderId = docRef.id;
-            orders[current].firebaseId = docRef.id;
+const docRef = await db.collection('orders').add(orderData);
+
+orders[current].firebaseId = docRef.id;
+currentOrderId = docRef.id;
+
+localStorage.setItem('orders', JSON.stringify(orders));
         } else {
             await db.collection('orders').doc(currentOrderId).set(orderData);
         }
@@ -409,7 +468,12 @@ async function autoSaveOrder() {
         console.error('Ошибка автосохранения', error);
     }
 }    
-addTab();
+if (orders.length === 0) {
+    addTab();
+} else {
+    renderTabs();
+    switchTab(0);
+}
     
 </script>
 
