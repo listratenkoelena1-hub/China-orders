@@ -149,11 +149,32 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();    
-let orders = JSON.parse(localStorage.getItem('orders')) || [];
+let orders = [];
 let current = 0;
 let currentRowCount = 20;
 let currentOrderId = null;
-let autoSaveTimeout;    
+let autoSaveTimeout;
+async function loadOrdersFromFirestore() {
+    try {
+        const snapshot = await db.collection('orders')
+            .orderBy('updatedAt', 'desc')
+            .get();
+
+        orders = snapshot.docs.map(doc => ({
+            name: doc.data().name || 'Без названия',
+            firebaseId: doc.id
+        }));
+
+        if (orders.length === 0) {
+            await addTab();
+        } else {
+            renderTabs();
+            switchTab(0);
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки orders', error);
+    }
+}    
 function createRows(rowCount = 20) {
     const tbody = document.getElementById('tbody');
     tbody.innerHTML = '';
@@ -329,75 +350,78 @@ function renderTabs() {
     tabs.appendChild(add);
 }
 
-function addTab() {
+async function addTab() {
+    const newOrder = {
+        name: '',
+        shipping: '',
+        rate: '0.2',
+        rowCount: 20,
+        updatedAt: new Date().toISOString(),
+        items: []
+    };
+
+    const docRef = await db.collection('orders').add(newOrder);
+
     orders.push({
         name: '',
-        firebaseId: null
+        firebaseId: docRef.id
     });
 
-    localStorage.setItem('orders', JSON.stringify(orders));
-
     current = orders.length - 1;
-    currentOrderId = null;
+    currentOrderId = docRef.id;
 
     loadTab();
     renderTabs();
-    autoSaveOrder();
 }
 
 async function switchTab(i) {
     current = i;
-    currentOrderId = orders[i].firebaseId || null;
+    currentOrderId = orders[i].firebaseId;
 
     renderTabs();
-
-    if (!currentOrderId) {
-        loadTab();
-        return;
-    }
 
     try {
         const doc = await db.collection('orders').doc(currentOrderId).get();
 
-        if (doc.exists) {
-            const data = doc.data();
+        if (!doc.exists) return;
 
-            document.getElementById('orderName').value = data.name || '';
-            document.getElementById('shipping').value = data.shipping || '';
-            document.getElementById('rate').value = data.rate || '';
+        const data = doc.data();
 
-            currentRowCount = data.rowCount || 20;
+        document.getElementById('orderName').value = data.name || '';
+        document.getElementById('shipping').value = data.shipping || '';
+        document.getElementById('rate').value = data.rate || '0.2';
 
-            const tbody = document.getElementById('tbody');
-            tbody.innerHTML = '';
+        currentRowCount = data.rowCount || 20;
 
-            for (let i = 0; i < currentRowCount; i++) {
-                const item = data.items?.[i] || {};
+        const tbody = document.getElementById('tbody');
+        tbody.innerHTML = '';
 
-                const row = document.createElement('tr');
+        for (let i = 0; i < currentRowCount; i++) {
+            const item = data.items?.[i] || {};
 
-                row.innerHTML = `
-                    <td>${i + 1}</td>
-                    <td contenteditable>${item.size || ''}</td>
-                    <td class="photo-cell" onclick="uploadPhoto(this)">
-                        ${item.photo ? `<img src="${item.photo}">` : ''}
-                    </td>
-                    <td contenteditable oninput="recalc()">${item.quantity || ''}</td>
-                    <td contenteditable oninput="recalc()">${item.price || ''}</td>
-                    <td>${item.sum || '0.00'}</td>
-                    <td contenteditable oninput="recalc()">${item.chinaDelivery || ''}</td>
-                    <td>${item.totalYuan || '0.00'}</td>
-                    <td>${item.shipping || '0.00'}</td>
-                    <td>${item.finalYuan || '0.00'}</td>
-                    <td>${item.cad || '0.00'}</td>
-                    <td>${item.perItemCad || '0.00'}</td>
-                `;
+            const row = document.createElement('tr');
 
-                tbody.appendChild(row);
-            }
+            row.innerHTML = `
+                <td>${i + 1}</td>
+                <td contenteditable>${item.size || ''}</td>
+                <td class="photo-cell" onclick="uploadPhoto(this)">
+                    ${item.photo ? `<img src="${item.photo}">` : ''}
+                </td>
+                <td contenteditable oninput="recalc()">${item.quantity || ''}</td>
+                <td contenteditable oninput="recalc()">${item.price || ''}</td>
+                <td>${item.sum || '0.00'}</td>
+                <td contenteditable oninput="recalc()">${item.chinaDelivery || ''}</td>
+                <td>${item.totalYuan || '0.00'}</td>
+                <td>${item.shipping || '0.00'}</td>
+                <td>${item.finalYuan || '0.00'}</td>
+                <td>${item.cad || '0.00'}</td>
+                <td>${item.perItemCad || '0.00'}</td>
+            `;
 
-            recalc();
+            tbody.appendChild(row);
         }
+
+        recalc();
     } catch (error) {
         console.error(error);
     }
@@ -412,7 +436,6 @@ function loadTab() {
 
 document.getElementById('orderName').oninput = e => {
     orders[current].name = e.target.value;
-    localStorage.setItem('orders', JSON.stringify(orders));
     renderTabs();
     autoSaveOrder();
 };
@@ -458,7 +481,6 @@ const docRef = await db.collection('orders').add(orderData);
 orders[current].firebaseId = docRef.id;
 currentOrderId = docRef.id;
 
-localStorage.setItem('orders', JSON.stringify(orders));
         } else {
             await db.collection('orders').doc(currentOrderId).set(orderData);
         }
@@ -468,12 +490,7 @@ localStorage.setItem('orders', JSON.stringify(orders));
         console.error('Ошибка автосохранения', error);
     }
 }    
-if (orders.length === 0) {
-    addTab();
-} else {
-    renderTabs();
-    switchTab(0);
-}
+loadOrdersFromFirestore();
     
 </script>
 
