@@ -152,6 +152,8 @@ const db = firebase.firestore();
 let orders = [];
 let current = 0;
 let currentRowCount = 20;
+let currentOrderId = null;
+let autoSaveTimeout;    
 function createRows(rowCount = 20) {
     const tbody = document.getElementById('tbody');
     tbody.innerHTML = '';
@@ -187,6 +189,7 @@ function uploadPhoto(cell) {
         img.src = URL.createObjectURL(file);
         cell.innerHTML = '';
         cell.appendChild(img);
+        autoSaveOrder();
     };
     input.click();
 }
@@ -251,6 +254,7 @@ tfoot.innerHTML = `
         <td></td>
     </tr>
 `;
+    scheduleAutoSave();
 }
 function addRow() {
     const tbody = document.getElementById('tbody');
@@ -275,6 +279,7 @@ function addRow() {
 
     tbody.appendChild(tr);
     recalc();
+    autoSaveOrder();
 }
 function renderTabs() {
     const tabs = document.getElementById('tabs');
@@ -296,16 +301,23 @@ function renderTabs() {
 }
 
 function addTab() {
-    orders.push({name: ''});
+    orders.push({
+        name: '',
+        firebaseId: null
+    });
+
     current = orders.length - 1;
+    currentOrderId = null;
+
     loadTab();
+    autoSaveOrder();
 }
 
 function switchTab(i) {
     current = i;
+    currentOrderId = orders[i].firebaseId || null;
     loadTab();
 }
-
 function loadTab() {
     currentRowCount = 20;
     document.getElementById('orderName').value = orders[current].name || '';
@@ -317,8 +329,57 @@ function loadTab() {
 document.getElementById('orderName').oninput = e => {
     orders[current].name = e.target.value;
     renderTabs();
+    autoSaveOrder();
 };
+function scheduleAutoSave() {
+    clearTimeout(autoSaveTimeout);
 
+    autoSaveTimeout = setTimeout(() => {
+        autoSaveOrder();
+    }, 500);
+}
+
+async function autoSaveOrder() {
+    const rows = document.querySelectorAll('#tbody tr');
+
+    const items = [...rows].map(r => ({
+        number: r.children[0].innerText,
+        size: r.children[1].innerText,
+        quantity: r.children[3].innerText,
+        price: r.children[4].innerText,
+        sum: r.children[5].innerText,
+        chinaDelivery: r.children[6].innerText,
+        totalYuan: r.children[7].innerText,
+        shipping: r.children[8].innerText,
+        finalYuan: r.children[9].innerText,
+        cad: r.children[10].innerText,
+        perItemCad: r.children[11].innerText,
+        photo: r.children[2].querySelector('img')?.src || ''
+    }));
+
+    const orderData = {
+        name: document.getElementById('orderName').value,
+        shipping: document.getElementById('shipping').value,
+        rate: document.getElementById('rate').value,
+        rowCount: currentRowCount,
+        updatedAt: new Date().toISOString(),
+        items
+    };
+
+    try {
+        if (!currentOrderId) {
+            const docRef = await db.collection('orders').add(orderData);
+            currentOrderId = docRef.id;
+            orders[current].firebaseId = docRef.id;
+        } else {
+            await db.collection('orders').doc(currentOrderId).set(orderData);
+        }
+
+        console.log('Автосохранение выполнено');
+    } catch (error) {
+        console.error('Ошибка автосохранения', error);
+    }
+}    
 addTab();
     
 </script>
