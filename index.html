@@ -899,6 +899,12 @@ async function savePdf() {
     if (pdfBtn) pdfBtn.disabled = true;
 
     try {
+        const escapeHtml = value => String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+
         const title = document.getElementById('orderName').value.trim() ||
             document.getElementById('pageTitle').innerText.trim() ||
             'Order';
@@ -907,62 +913,137 @@ async function savePdf() {
         const shipping = document.getElementById('shipping').value || '';
 
         const table = document.getElementById('table');
-        const exportNode = document.createElement('div');
+        const originalTbodyRows = [...table.querySelectorAll('tbody tr')];
+        const originalTfoot = table.querySelector('tfoot');
 
-        exportNode.style.position = 'fixed';
-        exportNode.style.left = '-100000px';
-        exportNode.style.top = '0';
-        exportNode.style.background = 'white';
-        exportNode.style.color = '#222';
-        exportNode.style.padding = '16px';
-        exportNode.style.boxSizing = 'border-box';
-        exportNode.style.width = Math.max(table.scrollWidth, 1200) + 32 + 'px';
+        const contentWidth = Math.max(table.scrollWidth, 1200);
+        const pageWidthPx = contentWidth + 32;
+        const maxPageHeightPx = Math.floor(pageWidthPx * (198 / 285));
 
-        const header = document.createElement('div');
-        header.style.marginBottom = '12px';
+        const exportRoot = document.createElement('div');
+        exportRoot.style.position = 'fixed';
+        exportRoot.style.left = '-100000px';
+        exportRoot.style.top = '0';
+        exportRoot.style.width = pageWidthPx + 'px';
+        exportRoot.style.background = 'white';
+        exportRoot.style.zIndex = '-1';
+        document.body.appendChild(exportRoot);
 
-        header.innerHTML = `
-            <div style="font-size:24px; font-weight:bold; margin-bottom:8px;">${title}</div>
-            <div style="display:flex; gap:24px; font-size:16px;">
-                <div><strong>Курс:</strong> ${rate || '-'}</div>
-                <div><strong>Shipping:</strong> ${shipping || '-'}</div>
-            </div>
-        `;
+        function normalizeTableStyles(tableNode) {
+            tableNode.style.minWidth = '0';
+            tableNode.style.width = contentWidth + 'px';
+            tableNode.style.borderCollapse = 'collapse';
+            tableNode.style.background = 'white';
 
-        const tableClone = table.cloneNode(true);
-        tableClone.style.minWidth = '0';
-        tableClone.style.width = table.scrollWidth + 'px';
-        tableClone.style.borderCollapse = 'collapse';
+            tableNode.querySelectorAll('th').forEach(th => {
+                th.style.position = 'static';
+                th.style.background = '#eee';
+            });
 
-        tableClone.querySelectorAll('th').forEach(th => {
-            th.style.position = 'static';
-        });
+            tableNode.querySelectorAll('th, td').forEach(cell => {
+                cell.style.border = '1px solid #ccc';
+                cell.style.padding = '5px';
+                cell.style.textAlign = 'center';
+                cell.style.fontSize = '14px';
+                cell.style.boxSizing = 'border-box';
+            });
 
-        tableClone.querySelectorAll('.photo-cell').forEach(cell => {
-            cell.style.width = '70px';
-            cell.style.height = '84px';
-        });
+            tableNode.querySelectorAll('.photo-cell').forEach(cell => {
+                cell.style.width = '70px';
+                cell.style.height = '84px';
+            });
 
-        exportNode.appendChild(header);
-        exportNode.appendChild(tableClone);
-        document.body.appendChild(exportNode);
+            tableNode.querySelectorAll('.photo-cell img').forEach(img => {
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'cover';
+                img.style.display = 'block';
+            });
+        }
 
-        await waitForPdfImages(exportNode);
+        function createHeaderNode() {
+            const header = document.createElement('div');
+            header.style.marginBottom = '12px';
+            header.innerHTML = `
+                <div style="font-size:24px; font-weight:bold; margin-bottom:8px;">${escapeHtml(title)}</div>
+                <div style="display:flex; gap:24px; font-size:16px;">
+                    <div><strong>Курс:</strong> ${escapeHtml(rate || '-')}</div>
+                    <div><strong>Shipping:</strong> ${escapeHtml(shipping || '-')}</div>
+                </div>
+            `;
+            return header;
+        }
 
-        const scale = Math.max(2, Math.min(window.devicePixelRatio || 1, 3));
+        function createPage() {
+            const page = document.createElement('div');
+            page.style.width = pageWidthPx + 'px';
+            page.style.minHeight = '0';
+            page.style.background = 'white';
+            page.style.padding = '16px';
+            page.style.boxSizing = 'border-box';
+            page.style.marginBottom = '24px';
 
-        const canvas = await html2canvas(exportNode, {
-            backgroundColor: '#ffffff',
-            scale,
-            useCORS: true,
-            logging: false,
-            scrollX: 0,
-            scrollY: 0,
-            windowWidth: exportNode.scrollWidth,
-            windowHeight: exportNode.scrollHeight
-        });
+            const header = createHeaderNode();
+            const tableNode = document.createElement('table');
+            const thead = table.querySelector('thead').cloneNode(true);
+            const tbody = document.createElement('tbody');
 
-        document.body.removeChild(exportNode);
+            tableNode.appendChild(thead);
+            tableNode.appendChild(tbody);
+            normalizeTableStyles(tableNode);
+
+            page.appendChild(header);
+            page.appendChild(tableNode);
+            exportRoot.appendChild(page);
+
+            return {
+                page,
+                tableNode,
+                tbody
+            };
+        }
+
+        const pages = [];
+        let currentPage = createPage();
+        pages.push(currentPage.page);
+
+        for (const originalRow of originalTbodyRows) {
+            const rowClone = originalRow.cloneNode(true);
+            currentPage.tbody.appendChild(rowClone);
+            normalizeTableStyles(currentPage.tableNode);
+
+            if (
+                currentPage.page.offsetHeight > maxPageHeightPx &&
+                currentPage.tbody.children.length > 1
+            ) {
+                currentPage.tbody.removeChild(rowClone);
+
+                currentPage = createPage();
+                pages.push(currentPage.page);
+                currentPage.tbody.appendChild(rowClone);
+                normalizeTableStyles(currentPage.tableNode);
+            }
+        }
+
+        if (originalTfoot) {
+            const footClone = originalTfoot.cloneNode(true);
+            currentPage.tableNode.appendChild(footClone);
+            normalizeTableStyles(currentPage.tableNode);
+
+            if (
+                currentPage.page.offsetHeight > maxPageHeightPx &&
+                currentPage.tbody.children.length > 0
+            ) {
+                currentPage.tableNode.removeChild(footClone);
+
+                currentPage = createPage();
+                pages.push(currentPage.page);
+                currentPage.tableNode.appendChild(originalTfoot.cloneNode(true));
+                normalizeTableStyles(currentPage.tableNode);
+            }
+        }
+
+        await waitForPdfImages(exportRoot);
 
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF({
@@ -972,29 +1053,44 @@ async function savePdf() {
             compress: true
         });
 
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        const margin = 6;
-        const usableWidth = pageWidth - margin * 2;
-        const usableHeight = pageHeight - margin * 2;
+        const pageWidthMm = pdf.internal.pageSize.getWidth();
+        const pageHeightMm = pdf.internal.pageSize.getHeight();
+        const marginMm = 6;
+        const usableWidthMm = pageWidthMm - marginMm * 2;
+        const usableHeightMm = pageHeightMm - marginMm * 2;
 
-        const imgWidth = usableWidth;
-        const imgHeight = canvas.height * imgWidth / canvas.width;
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        for (let i = 0; i < pages.length; i++) {
+            const pageNode = pages[i];
 
-        let remainingHeight = imgHeight;
-        let offsetY = 0;
+            const canvas = await html2canvas(pageNode, {
+                backgroundColor: '#ffffff',
+                scale: Math.max(2, Math.min(window.devicePixelRatio || 1, 3)),
+                useCORS: true,
+                logging: false,
+                scrollX: 0,
+                scrollY: 0,
+                windowWidth: pageNode.scrollWidth,
+                windowHeight: pageNode.scrollHeight
+            });
 
-        pdf.addImage(imgData, 'JPEG', margin, margin - offsetY, imgWidth, imgHeight, undefined, 'FAST');
-        remainingHeight -= usableHeight;
+            const imgData = canvas.toDataURL('image/jpeg', 0.95);
 
-        while (remainingHeight > 0) {
-            offsetY += usableHeight;
-            pdf.addPage();
-            pdf.addImage(imgData, 'JPEG', margin, margin - offsetY, imgWidth, imgHeight, undefined, 'FAST');
-            remainingHeight -= usableHeight;
+            let renderWidthMm = usableWidthMm;
+            let renderHeightMm = canvas.height * renderWidthMm / canvas.width;
+
+            if (renderHeightMm > usableHeightMm) {
+                renderHeightMm = usableHeightMm;
+                renderWidthMm = canvas.width * renderHeightMm / canvas.height;
+            }
+
+            const x = marginMm + (usableWidthMm - renderWidthMm) / 2;
+            const y = marginMm;
+
+            if (i > 0) pdf.addPage();
+            pdf.addImage(imgData, 'JPEG', x, y, renderWidthMm, renderHeightMm, undefined, 'FAST');
         }
 
+        document.body.removeChild(exportRoot);
         pdf.save(`${sanitizePdfFileName(title)}.pdf`);
     } catch (error) {
         console.error('Ошибка сохранения PDF', error);
@@ -1003,6 +1099,7 @@ async function savePdf() {
         if (pdfBtn) pdfBtn.disabled = false;
     }
 }
+
     
 loadOrdersFromFirestore();
     
