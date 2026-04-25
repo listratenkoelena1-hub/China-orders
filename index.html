@@ -167,6 +167,113 @@ td:not([contenteditable]):not(.photo-cell) {
 .red {
     background: #ffcccc;
 }
+.calc-toggle-wrap {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+}
+
+.calc-toggle-btn {
+    width: 40px;
+    height: 40px;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    background: white;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.calc-popover {
+    position: fixed;
+    top: 64px;
+    right: 12px;
+    width: min(320px, calc(100vw - 24px));
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 14px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+    padding: 10px;
+    z-index: 80;
+    box-sizing: border-box;
+}
+
+.calc-popover.hidden {
+    display: none;
+}
+
+.calc-head {
+    display: grid;
+    grid-template-columns: 1fr 40px 40px;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.calc-shipping-input,
+.calc-item-input {
+    height: 40px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 0 10px;
+    font-size: 16px;
+    box-sizing: border-box;
+    width: 100%;
+    margin: 0;
+}
+
+.calc-icon-btn {
+    width: 40px;
+    height: 40px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    background: #efefef;
+    cursor: pointer;
+    font-size: 18px;
+}
+
+.calc-items {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.calc-row {
+    display: grid;
+    grid-template-columns: 1fr 88px;
+    gap: 8px;
+    align-items: center;
+}
+
+.calc-result {
+    height: 40px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    background: #f3f3f3;
+    color: #222;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    padding: 0 8px;
+    box-sizing: border-box;
+    user-select: text;
+    -webkit-user-select: text;
+}
+
+.calc-add-btn {
+    width: 100%;
+    height: 40px;
+    margin-top: 8px;
+    border: none;
+    border-radius: 12px;
+    background: black;
+    color: white;
+    font-size: 22px;
+    cursor: pointer;
+}
+
+.top-bar {
+    position: sticky;
+}
 
 </style>
 </head>
@@ -175,6 +282,9 @@ td:not([contenteditable]):not(.photo-cell) {
 
 <div class="top-bar">
     <div class="page-title" id="pageTitle">Название</div>
+<div class="calc-toggle-wrap">
+    <button class="calc-toggle-btn" type="button" onclick="toggleCalc()">🧮</button>
+</div>
 
     <div>
         <label>Название</label>
@@ -221,6 +331,26 @@ td:not([contenteditable]):not(.photo-cell) {
     <button class="add-row-btn" onclick="addRow()">Добавить строку</button>
     <div class="tabs" id="tabs"></div>
 </div>
+<div class="calc-popover hidden" id="calcPopover">
+    <div class="calc-head">
+        <input
+            id="calcShipping"
+            class="calc-shipping-input"
+            type="number"
+            step="0.01"
+            inputmode="decimal"
+            placeholder="¥"
+            oninput="recalcCalc()"
+        >
+        <button class="calc-icon-btn" type="button" onclick="resetCalc()">↻</button>
+        <button class="calc-icon-btn" type="button" onclick="closeCalc()">✕</button>
+    </div>
+
+    <div class="calc-items" id="calcItems"></div>
+
+    <button class="calc-add-btn" type="button" onclick="addCalcItem()">+</button>
+</div>
+    
 <input type="file" id="fileInput" accept="image/*" style="display:none">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -585,7 +715,117 @@ currentOrderId = docRef.id;
     } catch (error) {
         console.error('Ошибка автосохранения', error);
     }
-}    
+}  
+let calcValues = [];
+
+function toggleCalc() {
+    const popover = document.getElementById('calcPopover');
+    popover.classList.toggle('hidden');
+
+    if (!popover.classList.contains('hidden') && calcValues.length === 0) {
+        addCalcItem();
+    }
+}
+
+function closeCalc() {
+    document.getElementById('calcPopover').classList.add('hidden');
+}
+
+function resetCalc() {
+    document.getElementById('calcShipping').value = '';
+    calcValues = [];
+    renderCalcItems();
+}
+
+function addCalcItem(value = '') {
+    calcValues.push(value);
+    renderCalcItems();
+}
+
+function updateCalcItem(index, value) {
+    calcValues[index] = value;
+    recalcCalc();
+}
+
+function renderCalcItems() {
+    const container = document.getElementById('calcItems');
+
+    if (calcValues.length === 0) {
+        calcValues = [''];
+    }
+
+    container.innerHTML = calcValues.map((value, index) => `
+        <div class="calc-row">
+            <input
+                class="calc-item-input"
+                type="number"
+                step="0.01"
+                inputmode="decimal"
+                placeholder="0"
+                value="${value}"
+                oninput="updateCalcItem(${index}, this.value)"
+            >
+            <div class="calc-result" id="calcResult${index}">0.00</div>
+        </div>
+    `).join('');
+
+    recalcCalc();
+}
+
+function recalcCalc() {
+    const shippingValue = parseFloat(document.getElementById('calcShipping').value) || 0;
+
+    const items = calcValues.map((value, index) => ({
+        index,
+        value: parseFloat(value) || 0
+    }));
+
+    const total = items.reduce((sum, item) => sum + item.value, 0);
+    const results = new Array(items.length).fill(0);
+
+    if (shippingValue > 0 && total > 0) {
+        const shippingCents = Math.round(shippingValue * 100);
+
+        let used = 0;
+        const calculated = items.map(item => {
+            const raw = shippingCents * item.value / total;
+            const base = Math.floor(raw);
+            used += base;
+
+            return {
+                index: item.index,
+                value: item.value,
+                base,
+                remainder: raw - base
+            };
+        });
+
+        let leftover = shippingCents - used;
+
+        calculated.sort((a, b) => {
+            if (a.value !== b.value) return a.value - b.value;
+            return b.remainder - a.remainder;
+        });
+
+        for (let i = 0; i < leftover; i++) {
+            calculated[i % calculated.length].base += 1;
+        }
+
+        calculated.forEach(item => {
+            results[item.index] = item.base / 100;
+        });
+    }
+
+    results.forEach((value, index) => {
+        const resultEl = document.getElementById(`calcResult${index}`);
+        if (resultEl) {
+            resultEl.innerText = value.toFixed(2);
+        }
+    });
+}
+
+renderCalcItems();
+    
 loadOrdersFromFirestore();
     
 </script>
