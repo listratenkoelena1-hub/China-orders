@@ -274,6 +274,17 @@ td:not([contenteditable]):not(.photo-cell) {
 .top-bar {
     position: sticky;
 }
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    appearance: textfield;
+    -webkit-appearance: none;
+    -moz-appearance: textfield;
+}
 
 </style>
 </head>
@@ -294,12 +305,12 @@ td:not([contenteditable]):not(.photo-cell) {
     <div class="top-fields-row">
         <div>
             <label>Курс</label>
-            <input id="rate" type="number" value="0.2" oninput="recalc()">
+            <input id="rate" type="number" inputmode="decimal" value="0.2" oninput="recalc()">
         </div>
 
         <div>
             <label>Shipping (¥)</label>
-            <input id="shipping" type="number" oninput="recalc()">
+            <input id="shipping" type="number" inputmode="decimal" oninput="recalc()">
         </div>
     </div>
 </div>
