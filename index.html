@@ -11,6 +11,7 @@ body {
     margin: 0;
     background: #f5f5f5;
 }
+
 .page-title {
     font-size: 26px;
     font-weight: bold;
@@ -54,7 +55,7 @@ body {
     border-top: 1px solid #ddd;
     padding: 10px 12px 20px;
     z-index: 50;
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.08);
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
 }
 
 .add-row-btn {
@@ -69,49 +70,6 @@ body {
     margin-bottom: 10px;
 }
 
-.tabs {
-    display: flex;
-    overflow-x: auto;
-    gap: 8px;
-    padding-bottom: 4px;
-    background: white;
-}
-
-.tab {
-    padding: 10px 14px;
-    border-radius: 12px;
-    background: #efefef;
-    cursor: pointer;
-    white-space: nowrap;
-    flex-shrink: 0;
-    min-width: 90px;
-    text-align: center;
-    border-right: none;
-}
-
-.tab.active {
-    background: #dcdcdc;
-}
-
-.table-container {
-    overflow: auto;
-    height: calc(100vh - 250px);
-    padding-bottom: 140px;
-    touch-action: pan-x pan-y;
-}
-
-table {
-    border-collapse: collapse;
-    min-width: 1400px;
-    background: white;
-}
-
-th {
-    position: sticky;
-    top: 0;
-    background: #eee;
-    z-index: 5;
-}
 .top-bar {
     padding: 12px;
     background: white;
@@ -132,6 +90,8 @@ input {
 .table-container {
     overflow: auto;
     height: calc(100vh - 120px);
+    padding-bottom: 140px;
+    touch-action: pan-x pan-y;
 }
 
 table {
@@ -140,10 +100,18 @@ table {
     background: white;
 }
 
-th, td {
+th,
+td {
     border: 1px solid #ccc;
     padding: 5px;
     text-align: center;
+}
+
+th {
+    position: sticky;
+    top: 0;
+    background: #eee;
+    z-index: 5;
 }
 
 td[contenteditable] {
@@ -153,13 +121,6 @@ td[contenteditable] {
 td:not([contenteditable]):not(.photo-cell) {
     background: #f3f3f3;
     color: #555;
-}
-
-th {
-    position: sticky;
-    top: 0;
-    background: #eee;
-    z-index: 5;
 }
 
 .photo-cell {
@@ -177,14 +138,22 @@ th {
 .tabs {
     display: flex;
     overflow-x: auto;
+    gap: 8px;
+    padding-bottom: 4px;
     background: white;
     border-top: 1px solid #ccc;
 }
 
 .tab {
     padding: 10px;
-    border-right: 1px solid #ddd;
+    border-radius: 12px;
+    background: #efefef;
     cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    min-width: 90px;
+    text-align: center;
+    border-right: 1px solid #ddd;
 }
 
 .tab.active {
@@ -198,6 +167,7 @@ th {
 .red {
     background: #ffcccc;
 }
+
 </style>
 </head>
 
