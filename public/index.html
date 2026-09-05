@@ -13,7 +13,7 @@ body {
 }
 
 .page-title {
-    flex: 1;
+    flex: 1 1 auto;
     min-width: 0;
     font-size: 26px;
     font-weight: bold;
@@ -97,16 +97,59 @@ body {
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
 }
 
-.add-row-btn {
-    width: 100%;
-    height: 44px;
-    border: none;
-    border-radius: 12px;
-    background: black;
+.bottom-actions {
+    width: max-content;
+    max-width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 0 auto 10px;
+}
+
+.bottom-action-btn {
+    height: 42px;
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: 1px solid #111;
+    border-radius: 11px;
+    padding: 0 14px;
+    background: white;
+    color: #111;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.bottom-action-btn.primary {
+    background: #111;
     color: white;
-    font-size: 16px;
-    font-weight: bold;
-    margin-bottom: 10px;
+}
+
+.bottom-action-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.bottom-action-btn svg {
+    width: 19px;
+    height: 19px;
+    flex: 0 0 auto;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.bottom-action-plus {
+    font-size: 20px;
+    font-weight: 500;
 }
 
 .top-bar {
@@ -224,48 +267,11 @@ td:not([contenteditable]):not(.photo-cell) {
 .red {
     background: #ffcccc;
 }
-.calc-toggle-wrap {
+.top-actions {
     display: flex;
     gap: 8px;
     flex-shrink: 0;
-}
-
-.calc-toggle-btn,
-.pdf-btn {
-    height: 40px;
-    border: 1px solid #ddd;
-    border-radius: 12px;
-    background: white;
-    cursor: pointer;
-}
-
-.calc-toggle-btn {
-    width: 40px;
-    font-size: 20px;
-}
-
-.import-toggle-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-}
-
-.import-toggle-btn svg {
-    width: 22px;
-    height: 22px;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-
-.pdf-btn {
-    padding: 0 10px;
-    color: #222;
-    font-size: 14px;
-    font-weight: bold;
+    margin-left: auto;
 }
 
 .save-status {
@@ -295,10 +301,6 @@ td:not([contenteditable]):not(.photo-cell) {
     font-weight: bold;
 }
 
-.pdf-btn:disabled {
-    opacity: 0.6;
-    cursor: default;
-}
 
 .calc-popover {
     position: fixed;
@@ -908,6 +910,17 @@ input[type="number"] {
     -moz-appearance: textfield;
 }
 @media (max-width: 768px) {
+    .bottom-actions {
+        width: 100%;
+    }
+
+    .bottom-action-btn {
+        min-width: 0;
+        flex: 1 1 0;
+        padding: 0 7px;
+        font-size: 13px;
+    }
+
     #table {
         min-width: 860px;
         font-size: 12px;
@@ -1116,18 +1129,9 @@ input[type="number"] {
 <div class="top-bar">
     <div class="top-title-row">
         <div class="page-title" id="pageTitle">Название</div>
-        <div class="calc-toggle-wrap">
-            <button class="account-btn" type="button" id="accountBtn" onclick="signOutGoogle()" title="Выйти" hidden>Выйти</button>
-            <button class="calc-toggle-btn import-toggle-btn" type="button" onclick="openOrderImport()" title="Импорт заказа из скриншота" aria-label="Импорт заказа из скриншота">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M12 3v11"></path>
-                    <path d="m8 10 4 4 4-4"></path>
-                    <path d="M5 17v3h14v-3"></path>
-                </svg>
-            </button>
-            <button class="pdf-btn" type="button" id="manualSaveBtn" onclick="manualSaveOrder()">Save</button>
+        <div class="top-actions">
             <button class="account-btn pdf-select-btn" type="button" id="selectAllPdfBtn" onclick="toggleAllPdfRows()">Выбрать все</button>
-            <button class="pdf-btn" type="button" id="pdfBtn" onclick="savePdf()">PDF</button>
+            <button class="account-btn" type="button" id="accountBtn" onclick="signOutGoogle()" title="Выйти" hidden>Выйти</button>
         </div>
     </div>
 
@@ -1176,7 +1180,22 @@ input[type="number"] {
 </div>
 
 <div class="bottom-bar">
-    <button class="add-row-btn" onclick="addRow()">Добавить строку</button>
+    <div class="bottom-actions" role="group" aria-label="Действия с заказом">
+        <button class="bottom-action-btn primary" type="button" onclick="addRow()" title="Добавить строку" aria-label="Добавить строку">
+            <span class="bottom-action-plus" aria-hidden="true">＋</span>
+            <span>Строка</span>
+        </button>
+        <button class="bottom-action-btn primary" type="button" onclick="openOrderImport()" title="Импорт заказа из скриншота" aria-label="Импорт заказа из скриншота">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 3v11"></path>
+                <path d="m8 10 4 4 4-4"></path>
+                <path d="M5 17v3h14v-3"></path>
+            </svg>
+            <span>Импорт</span>
+        </button>
+        <button class="bottom-action-btn" type="button" id="manualSaveBtn" onclick="manualSaveOrder()">Save</button>
+        <button class="bottom-action-btn" type="button" id="pdfBtn" onclick="savePdf()">PDF</button>
+    </div>
     <div class="tabs" id="tabs"></div>
 </div>
 <div class="calc-popover hidden" id="calcPopover">
