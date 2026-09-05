@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
@@ -13,10 +13,49 @@ body {
 }
 
 .page-title {
+    flex: 1;
+    min-width: 0;
     font-size: 26px;
     font-weight: bold;
     color: #222;
     min-height: 32px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.top-title-row,
+.top-name-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.top-title-row {
+    justify-content: space-between;
+}
+
+.top-name-field {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.top-name-field label {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 4px;
+}
+
+.top-name-field input {
+    height: 42px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 0 10px;
+    font-size: 18px;
+    box-sizing: border-box;
+    width: 100%;
 }
 
 .top-fields-row {
@@ -107,6 +146,20 @@ td {
     text-align: center;
 }
 
+#table th:nth-child(6),
+#table td:nth-child(6),
+#table th:nth-child(8),
+#table td:nth-child(8),
+#table th:nth-child(9),
+#table td:nth-child(9),
+#table th:nth-child(10),
+#table td:nth-child(10),
+#table th:nth-child(12),
+#table td:nth-child(12) {
+    padding-left: 1px;
+    padding-right: 1px;
+}
+
 th {
     position: sticky;
     top: 0;
@@ -116,6 +169,10 @@ th {
 
 td[contenteditable] {
     background: #fffef2;
+}
+
+td[contenteditable]:focus {
+    font-size: 16px;
 }
 
 td:not([contenteditable]):not(.photo-cell) {
@@ -168,11 +225,9 @@ td:not([contenteditable]):not(.photo-cell) {
     background: #ffcccc;
 }
 .calc-toggle-wrap {
-    position: absolute;
-    top: 12px;
-    right: 12px;
     display: flex;
     gap: 8px;
+    flex-shrink: 0;
 }
 
 .calc-toggle-btn,
@@ -193,6 +248,33 @@ td:not([contenteditable]):not(.photo-cell) {
     padding: 0 10px;
     color: #222;
     font-size: 14px;
+    font-weight: bold;
+}
+
+.save-status {
+    min-width: 64px;
+    max-width: 96px;
+    min-height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    color: #555;
+    font-size: 12px;
+    line-height: 1.15;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.save-status.saving {
+    color: #7a5b00;
+}
+
+.save-status.saved {
+    color: #1f7a38;
+}
+
+.save-status.error {
+    color: #b00020;
     font-weight: bold;
 }
 
@@ -252,6 +334,10 @@ td:not([contenteditable]):not(.photo-cell) {
     display: flex;
     flex-direction: column;
     gap: 8px;
+    max-height: 232px;
+    overflow-y: auto;
+    padding-right: 2px;
+    -webkit-overflow-scrolling: touch;
 }
 
 .calc-row {
@@ -320,21 +406,163 @@ input[type="number"] {
     }
 }
 
+.auth-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: #f5f5f5;
+}
+
+.auth-screen.hidden {
+    display: none;
+}
+
+.auth-card {
+    width: min(390px, 100%);
+    padding: 28px;
+    box-sizing: border-box;
+    border-radius: 18px;
+    background: white;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+    text-align: center;
+}
+
+.auth-card h1 {
+    margin: 0 0 10px;
+    font-size: 25px;
+}
+
+.auth-card p {
+    margin: 0 0 20px;
+    color: #666;
+    line-height: 1.45;
+}
+
+.auth-btn {
+    width: 100%;
+    min-height: 46px;
+    border: 0;
+    border-radius: 12px;
+    background: #111;
+    color: white;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.auth-error {
+    min-height: 20px;
+    margin-top: 14px;
+    color: #b42318;
+    font-size: 14px;
+}
+
+.account-btn {
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    background: white;
+    padding: 8px 10px;
+    cursor: pointer;
+}
+
+.pdf-select-btn.active {
+    background: #e7f0ff;
+    border-color: #7aa7f7;
+    color: #174ea6;
+}
+
+.row-number-cell {
+    min-width: 76px;
+    white-space: nowrap;
+}
+
+.pdf-row-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-right: 5px;
+    vertical-align: middle;
+}
+
+.pdf-quantity-wrap {
+    display: none;
+    align-items: center;
+    gap: 2px;
+    color: #276ef1;
+    font-weight: 700;
+}
+
+.pdf-row-checkbox:checked + .pdf-quantity-wrap {
+    display: inline-flex;
+}
+
+.pdf-row-checkbox {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    vertical-align: middle;
+    accent-color: #111;
+    cursor: pointer;
+}
+
+.pdf-quantity-input {
+    width: 38px;
+    height: 25px;
+    padding: 1px 3px;
+    margin: 0;
+    border: 1px solid #9aa4b2;
+    border-radius: 5px;
+    font-size: 13px;
+    text-align: center;
+    vertical-align: middle;
+    background: #fff;
+}
+
+.pdf-quantity-input:focus {
+    outline: 2px solid rgba(39, 110, 241, 0.28);
+    border-color: #276ef1;
+}
+
+.pdf-selected-row td {
+    box-shadow: inset 0 0 0 9999px rgba(39, 110, 241, 0.08);
+}
+
 </style>
 </head>
 
 <body>
 
-<div class="top-bar">
-    <div class="page-title" id="pageTitle">Название</div>
-<div class="calc-toggle-wrap">
-    <button class="calc-toggle-btn" type="button" onclick="toggleCalc()">🧮</button>
-    <button class="pdf-btn" type="button" id="pdfBtn" onclick="savePdf()">PDF</button>
+<div class="auth-screen" id="authScreen">
+    <div class="auth-card">
+        <h1>China Orders</h1>
+        <p id="authMessage">Войдите через разрешённый Google-аккаунт</p>
+        <button class="auth-btn" type="button" id="googleSignInBtn" onclick="signInWithGoogle()">Войти через Google</button>
+        <div class="auth-error" id="authError"></div>
+    </div>
 </div>
 
-    <div>
+<div class="top-bar">
+    <div class="top-title-row">
+        <div class="page-title" id="pageTitle">Название</div>
+        <div class="calc-toggle-wrap">
+            <button class="account-btn" type="button" id="accountBtn" onclick="signOutGoogle()" title="Выйти" hidden>Выйти</button>
+            <button class="calc-toggle-btn" type="button" onclick="toggleCalc()">🧮</button>
+            <button class="pdf-btn" type="button" id="manualSaveBtn" onclick="manualSaveOrder()">Save</button>
+            <button class="account-btn pdf-select-btn" type="button" id="selectAllPdfBtn" onclick="toggleAllPdfRows()">Выбрать все</button>
+            <button class="pdf-btn" type="button" id="pdfBtn" onclick="savePdf()">PDF</button>
+        </div>
+    </div>
+
+    <div class="top-name-row">
+        <div class="top-name-field">
         <label>Название</label>
         <input id="orderName">
+        </div>
+        <div class="save-status" id="saveStatus">Not saved</div>
     </div>
 
     <div class="top-fields-row">
@@ -397,10 +625,11 @@ input[type="number"] {
     <button class="calc-add-btn" type="button" onclick="addCalcItem()">+</button>
 </div>
     
-<input type="file" id="fileInput" accept="image/*" style="display:none">
+<input type="file" id="fileInput" accept="image/*" multiple style="display:none">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/3.0.3/jspdf.umd.min.js"></script>    
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     
 <script>
@@ -415,12 +644,92 @@ const firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();    
+const auth = firebase.auth();
+const db = firebase.firestore();
+const ALLOWED_GOOGLE_EMAILS = ['listratenkoelena1@gmail.com'];
+const PHOTO_MAX_WIDTH = 240;
+const PHOTO_JPEG_QUALITY = 0.45;
 let orders = [];
 let current = 0;
 let currentRowCount = 20;
 let currentOrderId = null;
 let autoSaveTimeout;
+let isLoadingOrder = false;
+let saveInProgress = false;
+let saveQueued = false;
+let ordersLoadedForUser = false;
+
+function normalizedEmail(value) {
+    return String(value || '').trim().toLowerCase();
+}
+
+function isAllowedGoogleUser(user) {
+    const email = normalizedEmail(user?.email);
+    return Boolean(email) && ALLOWED_GOOGLE_EMAILS.map(normalizedEmail).includes(email);
+}
+
+function setAuthError(message = '') {
+    const error = document.getElementById('authError');
+    if (error) error.innerText = message;
+}
+
+async function signInWithGoogle() {
+    setAuthError('');
+    const button = document.getElementById('googleSignInBtn');
+    if (button) button.disabled = true;
+
+    try {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: 'select_account' });
+        await auth.signInWithPopup(provider);
+    } catch (error) {
+        console.error('Google sign-in error', error);
+        setAuthError('Не удалось войти через Google. Попробуйте ещё раз.');
+    } finally {
+        if (button) button.disabled = false;
+    }
+}
+
+async function signOutGoogle() {
+    await auth.signOut();
+}
+
+auth.onAuthStateChanged(async user => {
+    const authScreen = document.getElementById('authScreen');
+    const accountBtn = document.getElementById('accountBtn');
+    const authMessage = document.getElementById('authMessage');
+
+    if (!user) {
+        ordersLoadedForUser = false;
+        orders = [];
+        currentOrderId = null;
+        if (authScreen) authScreen.classList.remove('hidden');
+        if (accountBtn) accountBtn.hidden = true;
+        if (authMessage) authMessage.innerText = 'Войдите через разрешённый Google-аккаунт';
+        return;
+    }
+
+    if (!isAllowedGoogleUser(user)) {
+        const email = user.email || 'этот аккаунт';
+        if (authMessage) authMessage.innerText = `Для ${email} доступ не разрешён`;
+        setAuthError('Сообщите этот Google-адрес владельцу приложения.');
+        await auth.signOut();
+        return;
+    }
+
+    setAuthError('');
+    if (authScreen) authScreen.classList.add('hidden');
+    if (accountBtn) {
+        accountBtn.hidden = false;
+        accountBtn.title = `${user.email} — выйти`;
+    }
+
+    if (!ordersLoadedForUser) {
+        ordersLoadedForUser = true;
+        await loadOrdersFromFirestore();
+    }
+});
+
 async function loadOrdersFromFirestore() {
     try {
         const snapshot = await db.collection('orders')
@@ -442,6 +751,108 @@ async function loadOrdersFromFirestore() {
         console.error('Ошибка загрузки orders', error);
     }
 }    
+function pdfRowSelector(rowNumber) {
+    return `<span class="pdf-row-controls"><input class="pdf-row-checkbox" type="checkbox" aria-label="Выбрать строку ${rowNumber} для PDF" onchange="handlePdfRowSelection(this)"><span class="pdf-quantity-wrap" title="Количество для PDF">×<input class="pdf-quantity-input" type="number" min="1" step="1" aria-label="Количество строки ${rowNumber} для PDF" onchange="handlePdfQuantityChange(this)" onclick="event.stopPropagation()"></span></span>`;
+}
+
+function handlePdfRowSelection(checkbox) {
+    const row = checkbox.closest('tr');
+    if (row && checkbox.checked) syncPdfQuantityInput(row);
+    if (row) row.classList.toggle('pdf-selected-row', checkbox.checked);
+    updatePdfSelectionControls();
+}
+
+function getOrderedRowQuantity(row) {
+    return Math.max(0, Math.floor(parseFloat(row?.children[3]?.innerText) || 0));
+}
+
+function syncPdfQuantityInput(row) {
+    const input = row?.querySelector('.pdf-quantity-input');
+    if (!input) return;
+    const orderedQty = getOrderedRowQuantity(row);
+    const previousMax = Math.floor(parseFloat(input.dataset.maxQty) || 0);
+    const currentValue = Math.floor(parseFloat(input.value) || 0);
+
+    input.max = String(Math.max(1, orderedQty));
+
+    if (orderedQty > 1) {
+        if (!currentValue || currentValue > orderedQty || currentValue === previousMax) {
+            input.value = String(orderedQty);
+        }
+    } else {
+        input.value = orderedQty === 1 ? '1' : '';
+    }
+
+    input.dataset.maxQty = String(orderedQty);
+}
+
+function handlePdfQuantityChange(input) {
+    const row = input.closest('tr');
+    const orderedQty = getOrderedRowQuantity(row);
+    const requestedQty = Math.floor(parseFloat(input.value) || orderedQty || 1);
+    input.value = String(Math.min(Math.max(1, requestedQty), Math.max(1, orderedQty)));
+    updatePdfSelectionControls();
+}
+
+function getPdfRowQuantity(row) {
+    const orderedQty = getOrderedRowQuantity(row);
+    if (orderedQty <= 1) return orderedQty;
+    const requestedQty = Math.floor(parseFloat(row.querySelector('.pdf-quantity-input')?.value) || orderedQty);
+    return Math.min(Math.max(1, requestedQty), orderedQty);
+}
+
+function rowHasPdfContent(row) {
+    if (!row) return false;
+    const hasPhoto = Boolean(row.children[2]?.querySelector('img'));
+    return hasPhoto || [1, 3, 4, 6].some(index => row.children[index]?.innerText.trim());
+}
+
+function getSelectedPdfRows() {
+    return [...document.querySelectorAll('#tbody tr')].filter(row =>
+        row.querySelector('.pdf-row-checkbox')?.checked
+    );
+}
+
+function updatePdfSelectionControls() {
+    const rows = [...document.querySelectorAll('#tbody tr')];
+    rows.forEach(syncPdfQuantityInput);
+    const eligibleRows = rows.filter(rowHasPdfContent);
+    const selectedRows = getSelectedPdfRows();
+    const allEligibleSelected = eligibleRows.length > 0 && eligibleRows.every(row =>
+        row.querySelector('.pdf-row-checkbox')?.checked
+    );
+    const selectAllBtn = document.getElementById('selectAllPdfBtn');
+    const pdfBtn = document.getElementById('pdfBtn');
+
+    if (selectAllBtn) {
+        selectAllBtn.innerText = allEligibleSelected ? 'Снять все' : 'Выбрать все';
+        selectAllBtn.classList.toggle('active', selectedRows.length > 0);
+    }
+
+    if (pdfBtn) {
+        pdfBtn.innerText = selectedRows.length > 0 ? `PDF (${selectedRows.length})` : 'PDF';
+        pdfBtn.title = selectedRows.length > 0
+            ? 'Создать PDF только из выбранных строк'
+            : 'Создать PDF из всей таблицы';
+    }
+}
+
+function toggleAllPdfRows() {
+    const eligibleRows = [...document.querySelectorAll('#tbody tr')].filter(rowHasPdfContent);
+    if (eligibleRows.length === 0) {
+        alert('Сначала заполните хотя бы одну строку');
+        return;
+    }
+
+    const shouldSelect = !eligibleRows.every(row => row.querySelector('.pdf-row-checkbox')?.checked);
+    document.querySelectorAll('#tbody .pdf-row-checkbox').forEach(checkbox => {
+        syncPdfQuantityInput(checkbox.closest('tr'));
+        checkbox.checked = shouldSelect && rowHasPdfContent(checkbox.closest('tr'));
+        checkbox.closest('tr')?.classList.toggle('pdf-selected-row', checkbox.checked);
+    });
+    updatePdfSelectionControls();
+}
+
 function createRows(rowCount = 20) {
     const tbody = document.getElementById('tbody');
     tbody.innerHTML = '';
@@ -450,13 +861,13 @@ function createRows(rowCount = 20) {
         let tr = document.createElement('tr');
 
         tr.innerHTML = `
-            <td>${i + 1}</td>
+            <td class="row-number-cell">${pdfRowSelector(i + 1)}${i + 1}</td>
             <td contenteditable></td>
             <td class="photo-cell" onclick="uploadPhoto(this)"></td>
-            <td contenteditable oninput="recalc()"></td>
-            <td contenteditable oninput="recalc()"></td>
+            <td contenteditable inputmode="decimal" oninput="recalc()"></td>
+            <td contenteditable inputmode="decimal" oninput="recalc()"></td>
             <td></td>
-            <td contenteditable oninput="recalc()"></td>
+            <td contenteditable inputmode="decimal" oninput="recalc()"></td>
             <td></td>
             <td></td>
             <td></td>
@@ -466,15 +877,11 @@ function createRows(rowCount = 20) {
 
         tbody.appendChild(tr);
     }
+    updatePdfSelectionControls();
 }
 
-function uploadPhoto(cell) {
-    const input = document.getElementById('fileInput');
-
-    input.onchange = e => {
-        const file = e.target.files[0];
-        if (!file) return;
-
+function compressPhotoFile(file) {
+    return new Promise((resolve, reject) => {
         const reader = new FileReader();
 
         reader.onload = event => {
@@ -482,31 +889,59 @@ function uploadPhoto(cell) {
 
             image.onload = () => {
                 const canvas = document.createElement('canvas');
+                const scale = Math.min(1, PHOTO_MAX_WIDTH / image.width);
 
-                const maxWidth = 300;
-                const scale = maxWidth / image.width;
-
-                canvas.width = maxWidth;
-                canvas.height = image.height * scale;
+                canvas.width = Math.round(image.width * scale);
+                canvas.height = Math.round(image.height * scale);
 
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
 
-                const compressedImage = canvas.toDataURL('image/jpeg', 0.6);
-
-                const img = document.createElement('img');
-                img.src = compressedImage;
-
-                cell.innerHTML = '';
-                cell.appendChild(img);
-
-                autoSaveOrder();
+                resolve(canvas.toDataURL('image/jpeg', PHOTO_JPEG_QUALITY));
             };
 
+            image.onerror = reject;
             image.src = event.target.result;
         };
 
+        reader.onerror = reject;
         reader.readAsDataURL(file);
+    });
+}
+
+async function uploadPhoto(cell) {
+    const input = document.getElementById('fileInput');
+
+    input.onchange = async e => {
+        const files = [...e.target.files];
+        input.value = '';
+        if (files.length === 0) return;
+
+        const rows = [...document.querySelectorAll('#tbody tr')];
+        const startRow = cell.closest('tr');
+        const startIndex = rows.indexOf(startRow);
+        if (startIndex < 0) return;
+
+        let inserted = 0;
+
+        for (let i = 0; i < files.length && startIndex + i < rows.length; i++) {
+            try {
+                const photoCell = rows[startIndex + i].children[2];
+                const compressedImage = await compressPhotoFile(files[i]);
+                const img = document.createElement('img');
+
+                img.src = compressedImage;
+                photoCell.innerHTML = '';
+                photoCell.appendChild(img);
+                inserted++;
+            } catch (error) {
+                console.error('Photo upload error', error);
+            }
+        }
+
+        if (inserted > 0) {
+            autoSaveOrder();
+        }
     };
 
     input.click();
@@ -571,6 +1006,7 @@ tfoot.innerHTML = `
         <td></td>
     </tr>
 `;
+    updatePdfSelectionControls();
     scheduleAutoSave();
 }
 function addRow() {
@@ -580,13 +1016,13 @@ function addRow() {
     let tr = document.createElement('tr');
 
     tr.innerHTML = `
-        <td>${currentRowCount}</td>
+        <td class="row-number-cell">${pdfRowSelector(currentRowCount)}${currentRowCount}</td>
         <td contenteditable></td>
         <td class="photo-cell" onclick="uploadPhoto(this)"></td>
-        <td contenteditable oninput="recalc()"></td>
-        <td contenteditable oninput="recalc()"></td>
+        <td contenteditable inputmode="decimal" oninput="recalc()"></td>
+        <td contenteditable inputmode="decimal" oninput="recalc()"></td>
         <td></td>
-        <td contenteditable oninput="recalc()"></td>
+        <td contenteditable inputmode="decimal" oninput="recalc()"></td>
         <td></td>
         <td></td>
         <td></td>
@@ -595,6 +1031,7 @@ function addRow() {
     `;
 
     tbody.appendChild(tr);
+    updatePdfSelectionControls();
     recalc();
     autoSaveOrder();
 }
@@ -604,9 +1041,42 @@ function renderTabs() {
 
     orders.forEach((o, i) => {
         let div = document.createElement('div');
+        let longPressTriggered = false;
+        let pressTimer;
+
         div.className = 'tab ' + (i === current ? 'active' : '');
         div.innerText = o.name || 'Без названия';
-        div.onclick = () => switchTab(i);
+
+        div.onclick = e => {
+            if (longPressTriggered) {
+                e.preventDefault();
+                longPressTriggered = false;
+                return;
+            }
+
+            switchTab(i);
+        };
+
+        div.oncontextmenu = e => {
+            e.preventDefault();
+            deleteTab(i);
+        };
+
+        div.onpointerdown = e => {
+            if (e.pointerType === 'mouse' && e.button !== 0) return;
+
+            longPressTriggered = false;
+            clearTimeout(pressTimer);
+            pressTimer = setTimeout(() => {
+                longPressTriggered = true;
+                deleteTab(i);
+            }, 800);
+        };
+
+        div.onpointerup = () => clearTimeout(pressTimer);
+        div.onpointerleave = () => clearTimeout(pressTimer);
+        div.onpointercancel = () => clearTimeout(pressTimer);
+
         tabs.appendChild(div);
     });
 
@@ -617,20 +1087,71 @@ function renderTabs() {
     tabs.appendChild(add);
 }
 
+async function deleteTab(i) {
+    const order = orders[i];
+    if (!order?.firebaseId) return;
+
+    const name = order.name || 'Без названия';
+    const confirmed = confirm(`Удалить лист "${name}"? Это действие нельзя отменить.`);
+    if (!confirmed) return;
+
+    clearTimeout(autoSaveTimeout);
+    setSaveStatus('Deleting...', 'saving');
+
+    try {
+        const orderRef = db.collection('orders').doc(order.firebaseId);
+
+        while (true) {
+            const itemsSnapshot = await orderRef.collection('items').limit(450).get();
+            if (itemsSnapshot.empty) break;
+
+            const batch = db.batch();
+            itemsSnapshot.docs.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
+
+            if (itemsSnapshot.size < 450) break;
+        }
+
+        await orderRef.delete();
+
+        orders.splice(i, 1);
+
+        if (orders.length === 0) {
+            current = 0;
+            currentOrderId = null;
+            await addTab();
+            setSaveStatus('Deleted', 'saved');
+            return;
+        }
+
+        current = Math.min(i, orders.length - 1);
+        currentOrderId = orders[current].firebaseId;
+        renderTabs();
+        await switchTab(current);
+        setSaveStatus('Deleted', 'saved');
+    } catch (error) {
+        console.error('Delete tab error', error);
+        setSaveStatus('Delete error', 'error');
+        alert('Не удалось удалить лист. Попробуйте еще раз.');
+    }
+}
+
 async function addTab() {
     const newOrder = {
         name: '',
         shipping: '',
         rate: '0.2',
         rowCount: 20,
-        updatedAt: new Date().toISOString(),
-        items: []
+        schemaVersion: 2,
+        updatedAt: new Date().toISOString()
     };
 
     const docRef = await db.collection('orders').add(newOrder);
 
     orders.push({
         name: '',
+        shipping: '',
+        rate: '0.2',
         firebaseId: docRef.id
     });
 
@@ -644,11 +1165,14 @@ document.getElementById('pageTitle').innerText = 'Название';
 async function switchTab(i) {
     current = i;
     currentOrderId = orders[i].firebaseId;
+    isLoadingOrder = true;
 
     renderTabs();
+    setSaveStatus('Loading...', 'saving');
 
     try {
-        const doc = await db.collection('orders').doc(currentOrderId).get();
+        const orderRef = db.collection('orders').doc(currentOrderId);
+        const doc = await orderRef.get();
 
         if (!doc.exists) return;
 
@@ -659,26 +1183,27 @@ async function switchTab(i) {
         document.getElementById('shipping').value = data.shipping || '';
         document.getElementById('rate').value = data.rate || '0.2';
 
-        currentRowCount = data.rowCount || 20;
+        const savedItems = await loadItemsForOrder(orderRef, data);
+        currentRowCount = Math.max(data.rowCount || 20, savedItems.length || 0, 20);
 
         const tbody = document.getElementById('tbody');
         tbody.innerHTML = '';
 
         for (let i = 0; i < currentRowCount; i++) {
-            const item = data.items?.[i] || {};
-
+            const item = savedItems[i] || {};
+            const photoSrc = item.photo || item.photoUrl || '';
             const row = document.createElement('tr');
 
             row.innerHTML = `
-                <td>${i + 1}</td>
+                <td class="row-number-cell">${pdfRowSelector(i + 1)}${i + 1}</td>
                 <td contenteditable>${item.size || ''}</td>
                 <td class="photo-cell" onclick="uploadPhoto(this)">
-                    ${item.photo ? `<img src="${item.photo}">` : ''}
+                    ${photoSrc ? `<img src="${photoSrc}">` : ''}
                 </td>
-                <td contenteditable oninput="recalc()">${item.quantity || ''}</td>
-                <td contenteditable oninput="recalc()">${item.price || ''}</td>
+                <td contenteditable inputmode="decimal" oninput="recalc()">${item.quantity || ''}</td>
+                <td contenteditable inputmode="decimal" oninput="recalc()">${item.price || ''}</td>
                 <td>${item.sum || '0.00'}</td>
-                <td contenteditable oninput="recalc()">${item.chinaDelivery || ''}</td>
+                <td contenteditable inputmode="decimal" oninput="recalc()">${item.chinaDelivery || ''}</td>
                 <td>${item.totalYuan || '0.00'}</td>
                 <td>${item.shipping || '0.00'}</td>
                 <td>${item.finalYuan || '0.00'}</td>
@@ -689,15 +1214,28 @@ async function switchTab(i) {
             tbody.appendChild(row);
         }
 
+        updatePdfSelectionControls();
+
         recalc();
+        setSaveStatus('Loaded', 'saved');
+
+        if (data.schemaVersion !== 2 || Array.isArray(data.items)) {
+            setTimeout(() => autoSaveOrder({ manual: true, migrate: true }), 0);
+        }
     } catch (error) {
         console.error(error);
+        setSaveStatus('Load error', 'error');
+        alert('Не удалось загрузить заказ');
+    } finally {
+        isLoadingOrder = false;
     }
 }
 function loadTab() {
     currentRowCount = 20;
     document.getElementById('orderName').value = orders[current].name || '';
     document.getElementById('pageTitle').innerText = orders[current].name || 'Название';
+    document.getElementById('shipping').value = orders[current].shipping || '';
+    document.getElementById('rate').value = orders[current].rate || '0.2';
     createRows(currentRowCount);
     renderTabs();
     recalc();
@@ -714,57 +1252,154 @@ document.getElementById('orderName').addEventListener('input', e => {
     const value = e.target.value.trim();
     pageTitle.innerText = value || 'Название';
 });    
+function setSaveStatus(text, state = '') {
+    const status = document.getElementById('saveStatus');
+    if (!status) return;
+
+    status.innerText = text;
+    status.className = `save-status ${state}`.trim();
+}
+
 function scheduleAutoSave() {
+    if (isLoadingOrder) return;
+
     clearTimeout(autoSaveTimeout);
+    setSaveStatus('Not saved', '');
 
     autoSaveTimeout = setTimeout(() => {
         autoSaveOrder();
-    }, 500);
+    }, 1000);
 }
 
-async function autoSaveOrder() {
-    const rows = document.querySelectorAll('#tbody tr');
+function manualSaveOrder() {
+    return autoSaveOrder({ manual: true });
+}
 
-    const items = [...rows].map(r => ({
-        number: r.children[0].innerText,
-        size: r.children[1].innerText,
-        quantity: r.children[3].innerText,
-        price: r.children[4].innerText,
-        sum: r.children[5].innerText,
-        chinaDelivery: r.children[6].innerText,
-        totalYuan: r.children[7].innerText,
-        shipping: r.children[8].innerText,
-        finalYuan: r.children[9].innerText,
-        cad: r.children[10].innerText,
-        perItemCad: r.children[11].innerText,
-        photo: r.children[2].querySelector('img')?.src || ''
-    }));
+function itemDocId(index) {
+    return String(index + 1).padStart(4, '0');
+}
 
-    const orderData = {
-        name: document.getElementById('orderName').value,
-        shipping: document.getElementById('shipping').value,
-        rate: document.getElementById('rate').value,
-        rowCount: currentRowCount,
-        updatedAt: new Date().toISOString(),
-        items
+async function loadItemsForOrder(orderRef, data) {
+    const itemsSnapshot = await orderRef.collection('items').orderBy('number').get();
+
+    if (itemsSnapshot.empty && Array.isArray(data.items)) {
+        return data.items;
+    }
+
+    const items = [];
+    itemsSnapshot.forEach(doc => {
+        const item = doc.data();
+        const index = (parseInt(item.number, 10) || 0) - 1;
+        if (index >= 0) items[index] = item;
+    });
+
+    return items;
+}
+
+async function buildItemData(row, index) {
+    const photoCell = row.children[2];
+    const img = photoCell.querySelector('img');
+    const photo = img?.src || '';
+
+    return {
+        number: String(index + 1),
+        size: row.children[1].innerText,
+        quantity: row.children[3].innerText,
+        price: row.children[4].innerText,
+        sum: row.children[5].innerText,
+        chinaDelivery: row.children[6].innerText,
+        totalYuan: row.children[7].innerText,
+        shipping: row.children[8].innerText,
+        finalYuan: row.children[9].innerText,
+        cad: row.children[10].innerText,
+        perItemCad: row.children[11].innerText,
+        photo,
+        updatedAt: new Date().toISOString()
     };
+}
+
+async function autoSaveOrder(options = {}) {
+    if (isLoadingOrder) return;
+
+    if (saveInProgress) {
+        saveQueued = true;
+        return;
+    }
+
+    saveInProgress = true;
+    const manual = Boolean(options.manual);
+    const migrate = Boolean(options.migrate);
+    const saveBtn = document.getElementById('manualSaveBtn');
+
+    if (saveBtn) saveBtn.disabled = true;
+    setSaveStatus(migrate ? 'Migrating...' : 'Saving...', 'saving');
 
     try {
         if (!currentOrderId) {
-const docRef = await db.collection('orders').add(orderData);
+            const docRef = await db.collection('orders').add({
+                name: document.getElementById('orderName').value,
+                shipping: document.getElementById('shipping').value,
+                rate: document.getElementById('rate').value,
+                rowCount: currentRowCount,
+                schemaVersion: 2,
+                updatedAt: new Date().toISOString()
+            });
 
-orders[current].firebaseId = docRef.id;
-currentOrderId = docRef.id;
-
-        } else {
-            await db.collection('orders').doc(currentOrderId).set(orderData);
+            orders[current].firebaseId = docRef.id;
+            currentOrderId = docRef.id;
         }
 
-        console.log('Автосохранение выполнено');
+        const rows = [...document.querySelectorAll('#tbody tr')];
+        const orderRef = db.collection('orders').doc(currentOrderId);
+        const items = [];
+
+        for (let i = 0; i < rows.length; i++) {
+            setSaveStatus(migrate ? `Migrating ${i + 1}/${rows.length}` : `Saving ${i + 1}/${rows.length}`, 'saving');
+            items.push(await buildItemData(rows[i], i));
+        }
+
+        const batch = db.batch();
+
+        items.forEach((item, index) => {
+            const itemRef = orderRef.collection('items').doc(itemDocId(index));
+            batch.set(itemRef, item);
+        });
+
+        const orderData = {
+            name: document.getElementById('orderName').value,
+            shipping: document.getElementById('shipping').value,
+            rate: document.getElementById('rate').value,
+            rowCount: currentRowCount,
+            schemaVersion: 2,
+            updatedAt: new Date().toISOString()
+        };
+
+        if (migrate) {
+            orderData.migratedAt = new Date().toISOString();
+        }
+
+        batch.set(orderRef, orderData);
+        await batch.commit();
+
+        orders[current].name = document.getElementById('orderName').value;
+        renderTabs();
+        setSaveStatus('Saved', 'saved');
+        if (manual && !migrate) alert('Все сохранено');
+        console.log('Save complete');
     } catch (error) {
-        console.error('Ошибка автосохранения', error);
+        console.error('Save error', error);
+        setSaveStatus('Save error', 'error');
+        if (manual && !migrate) alert('Ошибка сохранения. Попробуйте еще раз.');
+    } finally {
+        saveInProgress = false;
+        if (saveBtn) saveBtn.disabled = false;
+
+        if (saveQueued) {
+            saveQueued = false;
+            autoSaveOrder();
+        }
     }
-}  
+}
 let calcValues = [];
 
 function toggleCalc() {
@@ -913,8 +1548,34 @@ async function savePdf() {
         const shipping = document.getElementById('shipping').value || '';
 
         const table = document.getElementById('table');
-        const originalTbodyRows = [...table.querySelectorAll('tbody tr')];
+        const allTbodyRows = [...table.querySelectorAll('tbody tr')];
+        const selectedTbodyRows = getSelectedPdfRows();
+        const exportingSelection = selectedTbodyRows.length > 0;
+        const originalTbodyRows = exportingSelection ? selectedTbodyRows : allTbodyRows;
         const originalTfoot = table.querySelector('tfoot');
+
+        function createAdjustedPdfRow(sourceRow) {
+            const row = sourceRow.cloneNode(true);
+            if (!exportingSelection) return row;
+
+            const orderedQty = getOrderedRowQuantity(sourceRow);
+            const pdfQty = getPdfRowQuantity(sourceRow);
+            const ratio = orderedQty > 0 ? pdfQty / orderedQty : 1;
+
+            row.children[3].innerText = String(pdfQty);
+            [5, 6, 7, 8, 9, 10].forEach(columnIndex => {
+                const originalValue = parseFloat(sourceRow.children[columnIndex]?.innerText) || 0;
+                row.children[columnIndex].innerText = (originalValue * ratio).toFixed(2);
+            });
+            row.children[11].innerText = sourceRow.children[11]?.innerText || '0.00';
+            return row;
+        }
+
+        const pdfTbodyRows = originalTbodyRows.map(createAdjustedPdfRow);
+        const selectedShipping = pdfTbodyRows.reduce((sum, row) =>
+            sum + (parseFloat(row.children[8]?.innerText) || 0), 0
+        );
+        const pdfShipping = exportingSelection ? selectedShipping.toFixed(2) : shipping;
 
         const contentWidth = Math.max(table.scrollWidth, 1200);
         const pageWidthPx = contentWidth + 32;
@@ -959,6 +1620,31 @@ async function savePdf() {
                 img.style.objectFit = 'cover';
                 img.style.display = 'block';
             });
+
+            tableNode.querySelectorAll('.pdf-row-controls').forEach(control => control.remove());
+            tableNode.querySelectorAll('.pdf-selected-row').forEach(row => row.classList.remove('pdf-selected-row'));
+        }
+
+        function createPdfTotalFoot(rowsForTotal) {
+            const columnTotals = [5, 6, 7, 8, 9, 10].map(columnIndex =>
+                rowsForTotal.reduce((sum, row) =>
+                    sum + (parseFloat(row.children[columnIndex]?.innerText) || 0), 0
+                )
+            );
+            const tfoot = document.createElement('tfoot');
+            tfoot.innerHTML = `
+                <tr style="background:#ececec; font-weight:bold; border-top:2px solid #888;">
+                    <td colspan="5">ИТОГО${exportingSelection ? ' (ВЫБРАННОЕ)' : ''}</td>
+                    <td>${columnTotals[0].toFixed(2)}</td>
+                    <td>${columnTotals[1].toFixed(2)}</td>
+                    <td>${columnTotals[2].toFixed(2)}</td>
+                    <td>${columnTotals[3].toFixed(2)}</td>
+                    <td>${columnTotals[4].toFixed(2)}</td>
+                    <td>${columnTotals[5].toFixed(2)}</td>
+                    <td></td>
+                </tr>
+            `;
+            return tfoot;
         }
 
         function createHeaderNode() {
@@ -968,7 +1654,7 @@ async function savePdf() {
                 <div style="font-size:24px; font-weight:bold; margin-bottom:8px;">${escapeHtml(title)}</div>
                 <div style="display:flex; gap:24px; font-size:16px;">
                     <div><strong>Курс:</strong> ${escapeHtml(rate || '-')}</div>
-                    <div><strong>Shipping:</strong> ${escapeHtml(shipping || '-')}</div>
+                    <div><strong>Shipping${exportingSelection ? ' (выбранное)' : ''}:</strong> ${escapeHtml(pdfShipping || '-')}</div>
                 </div>
             `;
             return header;
@@ -1007,8 +1693,8 @@ async function savePdf() {
         let currentPage = createPage();
         pages.push(currentPage.page);
 
-        for (const originalRow of originalTbodyRows) {
-            const rowClone = originalRow.cloneNode(true);
+        for (const pdfRow of pdfTbodyRows) {
+            const rowClone = pdfRow.cloneNode(true);
             currentPage.tbody.appendChild(rowClone);
             normalizeTableStyles(currentPage.tableNode);
 
@@ -1026,7 +1712,7 @@ async function savePdf() {
         }
 
         if (originalTfoot) {
-            const footClone = originalTfoot.cloneNode(true);
+            const footClone = createPdfTotalFoot(pdfTbodyRows);
             currentPage.tableNode.appendChild(footClone);
             normalizeTableStyles(currentPage.tableNode);
 
@@ -1038,7 +1724,7 @@ async function savePdf() {
 
                 currentPage = createPage();
                 pages.push(currentPage.page);
-                currentPage.tableNode.appendChild(originalTfoot.cloneNode(true));
+                currentPage.tableNode.appendChild(createPdfTotalFoot(pdfTbodyRows));
                 normalizeTableStyles(currentPage.tableNode);
             }
         }
@@ -1100,8 +1786,6 @@ async function savePdf() {
     }
 }
 
-    
-loadOrdersFromFirestore();
     
 </script>
 
