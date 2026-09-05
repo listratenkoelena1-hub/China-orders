@@ -118,10 +118,11 @@
 
     function quantityFromWord(word) {
         const compact = word.text.replace(/\s/g, '');
-        const match = compact.match(/^[xхХ×][xхХ×]?(\d{1,4})$/i);
+        const match = compact.match(/^[xхХ×][xхХ×]?([0-9iIl|]{1,4})$/i);
         if (!match) return null;
 
-        const quantity = Number.parseInt(match[1], 10);
+        const normalizedQuantity = match[1].replace(/[iIl|]/g, '1');
+        const quantity = Number.parseInt(normalizedQuantity, 10);
         return Number.isFinite(quantity) && quantity > 0 ? quantity : null;
     }
 
@@ -171,6 +172,106 @@
         return candidates[0] || null;
     }
 
+    function rightPriceLines(lines, imageWidth) {
+        return lines
+            .map(line => {
+                const amounts = decimalMatchesForLine(line)
+                    .filter(amount => amount.x >= imageWidth * 0.76 && amount.value >= 0)
+                    .sort((a, b) => b.x - a.x);
+
+                return amounts.length > 0 ? { line, amount: amounts[0] } : null;
+            })
+            .filter(Boolean)
+            .sort((a, b) => a.amount.y - b.amount.y || b.amount.x - a.amount.x);
+    }
+
+    function amountsCanBePricePair(first, second) {
+        const largest = Math.max(first.amount.value, second.amount.value);
+        if (largest === 0) return true;
+        return Math.min(first.amount.value, second.amount.value) / largest >= 0.42;
+    }
+
+    function findPricePairs(lines, imageWidth) {
+        const priceLines = rightPriceLines(lines, imageWidth);
+        const pairs = [];
+
+        for (let index = 0; index < priceLines.length - 1; index++) {
+            const first = priceLines[index];
+            const second = priceLines[index + 1];
+            const gap = second.amount.y - first.amount.y;
+
+            if (gap < imageWidth * 0.025 || gap > imageWidth * 0.065) continue;
+            if (!amountsCanBePricePair(first, second)) continue;
+
+            pairs.push({
+                price: {
+                    line: first.line,
+                    amount: first.amount,
+                    isActual: true
+                },
+                originalPrice: second
+            });
+            index++;
+        }
+
+        return pairs;
+    }
+
+    function findItemDetections(words, lines, imageWidth) {
+        const quantityAnchors = findQuantityAnchors(words, imageWidth);
+        const pricePairs = findPricePairs(lines, imageWidth);
+        const usedAnchors = new Set();
+
+        const detections = pricePairs.map(pair => {
+            const expectedQuantityY = pair.price.amount.y + imageWidth * 0.12;
+            const anchor = quantityAnchors
+                .map((candidate, index) => ({ candidate, index }))
+                .filter(item => !usedAnchors.has(item.index))
+                .filter(item => {
+                    const gap = item.candidate.centerY - pair.price.amount.y;
+                    return gap >= imageWidth * 0.06 && gap <= imageWidth * 0.19;
+                })
+                .sort((a, b) => (
+                    Math.abs(a.candidate.centerY - expectedQuantityY)
+                    - Math.abs(b.candidate.centerY - expectedQuantityY)
+                ))[0];
+
+            if (anchor) usedAnchors.add(anchor.index);
+
+            const inferredCenterY = pair.originalPrice.amount.y + imageWidth * 0.07;
+            return {
+                quantity: anchor ? anchor.candidate.quantity : 1,
+                centerY: anchor ? anchor.candidate.centerY : inferredCenterY,
+                confidence: anchor
+                    ? Math.round((anchor.candidate.confidence + pair.price.amount.confidence) / 2)
+                    : Math.round(pair.price.amount.confidence),
+                price: pair.price,
+                inferredQuantity: !anchor
+            };
+        });
+
+        quantityAnchors.forEach((anchor, index) => {
+            if (usedAnchors.has(index)) return;
+            const price = priceForAnchor(anchor, lines, imageWidth);
+            if (!price) return;
+
+            const alreadyDetected = detections.some(detection => (
+                Math.abs(detection.price.amount.y - price.amount.y) < imageWidth * 0.05
+            ));
+            if (alreadyDetected) return;
+
+            detections.push({
+                quantity: anchor.quantity,
+                centerY: anchor.centerY,
+                confidence: Math.round((anchor.confidence + price.amount.confidence) / 2),
+                price,
+                inferredQuantity: false
+            });
+        });
+
+        return detections.sort((a, b) => a.price.amount.y - b.price.amount.y);
+    }
+
     function cleanDescriptionLine(line, imageWidth) {
         if (EXCLUDED_LINE_PATTERN.test(line.text)) return '';
 
@@ -187,17 +288,20 @@
         return text;
     }
 
-    function descriptionForItem(index, anchors, prices, lines, imageWidth, summaryY) {
-        const price = prices[index];
+    function descriptionForItem(index, detections, lines, imageWidth, summaryY) {
+        const detection = detections[index];
+        const price = detection?.price;
         if (!price) return '';
 
-        const startY = price.amount.y - 4;
-        const nextBoundary = index < anchors.length - 1
-            ? (anchors[index].centerY + anchors[index + 1].centerY) / 2
-            : summaryY;
-        const endY = Number.isFinite(nextBoundary)
-            ? nextBoundary
-            : anchors[index].centerY + imageWidth * 0.34;
+        const startY = price.amount.y - imageWidth * 0.02;
+        const nextPriceY = detections[index + 1]?.price?.amount?.y;
+        const localBoundary = Number.isFinite(nextPriceY)
+            ? (price.amount.y + nextPriceY) / 2
+            : price.amount.y + imageWidth * 0.28;
+        const endY = Math.min(
+            Number.isFinite(summaryY) ? summaryY : Number.POSITIVE_INFINITY,
+            localBoundary
+        );
 
         const pieces = lines
             .filter(line => line.centerY >= startY && line.centerY < endY)
@@ -240,6 +344,32 @@
             .filter(value => value !== null);
     }
 
+    function likelyYuanEquivalent(amounts) {
+        if (amounts.length < 2) return null;
+
+        const foreignAmount = amounts[0].value;
+        const yuanAmount = amounts[amounts.length - 1];
+        const candidates = [yuanAmount.value];
+        const normalizedRaw = String(yuanAmount.raw || '').replace(',', '.');
+        const parts = normalizedRaw.split('.');
+
+        if (parts.length === 2 && parts[0].length > 1) {
+            for (let cut = 1; cut < parts[0].length; cut++) {
+                const candidate = numberFromText(`${parts[0].slice(cut)}.${parts[1]}`);
+                if (candidate !== null) candidates.push(candidate);
+            }
+        }
+
+        if (foreignAmount > 0) {
+            const plausible = candidates
+                .filter(value => value / foreignAmount >= 3 && value / foreignAmount <= 12)
+                .sort((a, b) => Math.abs(a / foreignAmount - 7) - Math.abs(b / foreignAmount - 7));
+            if (plausible.length > 0) return roundMoney(plausible[0]);
+        }
+
+        return roundMoney(yuanAmount.value);
+    }
+
     function freightFromLines(lines, minimumY) {
         const index = firstMatchingLineIndex(lines, FREIGHT_PATTERN, minimumY);
         if (index < 0) return null;
@@ -251,6 +381,15 @@
     function feeFromLines(lines, minimumY, imageHeight) {
         const index = firstMatchingLineIndex(lines, FEE_PATTERN, minimumY);
         if (index < 0) return null;
+
+        const nearbyLines = lines
+            .slice(index)
+            .filter(line => line.top <= lines[index].top + imageHeight * 0.075);
+        const multiAmountLine = nearbyLines
+            .map(line => decimalMatchesForLine(line))
+            .find(amounts => amounts.length >= 2);
+
+        if (multiAmountLine) return likelyYuanEquivalent(multiAmountLine);
 
         const nearby = joinedNearbyText(lines, index, imageHeight);
         const yuanMatches = [...nearby.matchAll(/(-?\d+[.,]\d{1,3})\s*[¥￥]/g)]
@@ -264,32 +403,64 @@
         return null;
     }
 
+    function summaryFromPosition(lines, minimumY, imageWidth) {
+        const entries = lines
+            .filter(line => line.centerY >= minimumY)
+            .map(line => ({
+                line,
+                amounts: decimalMatchesForLine(line)
+            }))
+            .filter(entry => entry.amounts.some(amount => amount.x >= imageWidth * 0.68))
+            .sort((a, b) => a.line.top - b.line.top);
+
+        const feeIndex = entries.findIndex(entry => entry.amounts.length >= 2);
+        if (feeIndex <= 0) {
+            return { freight: null, processingFee: null, top: null };
+        }
+
+        const freightAmounts = entries[feeIndex - 1].amounts
+            .filter(amount => amount.x >= imageWidth * 0.68)
+            .sort((a, b) => b.x - a.x);
+
+        return {
+            freight: freightAmounts.length > 0 ? roundMoney(freightAmounts[0].value) : null,
+            processingFee: likelyYuanEquivalent(entries[feeIndex].amounts),
+            top: entries[Math.max(0, feeIndex - 2)]?.line?.top ?? entries[feeIndex - 1].line.top
+        };
+    }
+
     function parseOrderScreenshotTsv(tsv, imageWidth, imageHeight) {
         const words = parseTsvWords(tsv);
         const lines = buildLines(words);
-        const anchors = findQuantityAnchors(words, imageWidth);
-        const prices = anchors.map(anchor => priceForAnchor(anchor, lines, imageWidth));
-        const lastAnchorY = anchors.length > 0 ? anchors[anchors.length - 1].centerY : imageHeight * 0.45;
-        const summaryLine = lines.find(line => line.centerY > lastAnchorY && SUMMARY_PATTERN.test(line.text));
-        const summaryY = summaryLine ? summaryLine.top : imageHeight;
+        const detections = findItemDetections(words, lines, imageWidth);
+        const lastDetectionY = detections.length > 0
+            ? detections[detections.length - 1].centerY
+            : imageHeight * 0.45;
+        const positionalSummary = summaryFromPosition(
+            lines,
+            lastDetectionY + imageWidth * 0.12,
+            imageWidth
+        );
+        const summaryLine = lines.find(line => line.centerY > lastDetectionY && SUMMARY_PATTERN.test(line.text));
+        const summaryY = summaryLine?.top ?? positionalSummary.top ?? imageHeight;
 
-        const items = anchors
-            .map((anchor, index) => {
-                const price = prices[index];
-                if (!price) return null;
+        const items = detections
+            .map((detection, index) => {
+                const price = detection.price;
 
                 return {
-                    quantity: anchor.quantity,
+                    quantity: detection.quantity,
                     price: roundMoney(price.amount.value),
-                    description: descriptionForItem(index, anchors, prices, lines, imageWidth, summaryY),
+                    description: descriptionForItem(index, detections, lines, imageWidth, summaryY),
                     crop: photoCropForPrice(price, imageWidth, imageHeight),
-                    confidence: Math.round((anchor.confidence + price.amount.confidence) / 2)
+                    confidence: detection.confidence,
+                    inferredQuantity: detection.inferredQuantity
                 };
             })
             .filter(Boolean);
 
-        const freight = freightFromLines(lines, lastAnchorY);
-        const processingFee = feeFromLines(lines, lastAnchorY, imageHeight);
+        const freight = freightFromLines(lines, lastDetectionY) ?? positionalSummary.freight;
+        const processingFee = feeFromLines(lines, lastDetectionY, imageHeight) ?? positionalSummary.processingFee;
         const warnings = [];
 
         if (items.length === 0) warnings.push('Товары не распознаны');
@@ -334,8 +505,88 @@
         return results;
     }
 
+    function normalizeOverlapDescription(value) {
+        const latinToCyrillic = {
+            a: 'а', b: 'в', c: 'с', d: 'д', e: 'е', f: 'ф', g: 'г', h: 'н',
+            i: 'и', j: 'й', k: 'к', l: 'л', m: 'м', n: 'н', o: 'о', p: 'р',
+            q: 'к', r: 'р', s: 'с', t: 'т', u: 'у', v: 'в', w: 'ш', x: 'х',
+            y: 'у', z: 'з'
+        };
+
+        return String(value || '')
+            .toLowerCase()
+            .replace(/[a-z]/g, character => latinToCyrillic[character] || character)
+            .replace(/трансграничн\S*/g, ' ')
+            .replace(/возврат\s+без\s+причины.*$/g, ' ')
+            .replace(/\d+(?:[.,]\d+)?\s*[gг]?/g, ' ')
+            .replace(/[^a-zа-яё\u4e00-\u9fff]+/gi, ' ')
+            .replace(/(?:^|\s)(?:получено|оценки|оценка|ртв|ть)(?=\s|$)/giu, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    function textSimilarity(first, second) {
+        if (first === second) return first ? 1 : 0;
+        if (!first || !second) return 0;
+
+        const previous = Array.from({ length: second.length + 1 }, (_, index) => index);
+
+        for (let firstIndex = 1; firstIndex <= first.length; firstIndex++) {
+            const current = [firstIndex];
+
+            for (let secondIndex = 1; secondIndex <= second.length; secondIndex++) {
+                current[secondIndex] = Math.min(
+                    current[secondIndex - 1] + 1,
+                    previous[secondIndex] + 1,
+                    previous[secondIndex - 1] + (first[firstIndex - 1] === second[secondIndex - 1] ? 0 : 1)
+                );
+            }
+
+            for (let index = 0; index < current.length; index++) previous[index] = current[index];
+        }
+
+        return 1 - previous[second.length] / Math.max(first.length, second.length);
+    }
+
+    function overlappingItemsMatch(first, second) {
+        if (!first || !second) return false;
+        if (Number(first.quantity) !== Number(second.quantity)) return false;
+        if (Math.abs(Number(first.price) - Number(second.price)) > 0.01) return false;
+
+        const firstDescription = normalizeOverlapDescription(first.description);
+        const secondDescription = normalizeOverlapDescription(second.description);
+        if (Math.min(firstDescription.length, secondDescription.length) < 5) return false;
+
+        return textSimilarity(firstDescription, secondDescription) >= 0.72;
+    }
+
+    function mergeScreenshotItems(existingItems, nextItems) {
+        const existing = [...(existingItems || [])];
+        const next = [...(nextItems || [])];
+        const maximumOverlap = Math.min(existing.length, next.length, 6);
+        let overlap = 0;
+
+        for (let size = maximumOverlap; size > 0; size--) {
+            const existingStart = existing.length - size;
+            const matches = next
+                .slice(0, size)
+                .every((item, index) => overlappingItemsMatch(existing[existingStart + index], item));
+
+            if (matches) {
+                overlap = size;
+                break;
+            }
+        }
+
+        return {
+            items: existing.concat(next.slice(overlap)),
+            removed: overlap
+        };
+    }
+
     return {
         allocateMoney,
+        mergeScreenshotItems,
         numberFromText,
         parseOrderScreenshotTsv,
         parseTsvWords

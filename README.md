@@ -22,6 +22,8 @@
 ## Проверка и деплой
 
 ```powershell
+node tests/order-import-parser.test.js
+node --check public/order-import.js
 node --check functions/index.js
 firebase deploy --project china-orders-firebase
 ```

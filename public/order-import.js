@@ -182,22 +182,6 @@
         return [...new Set(values.map(value => roundImportMoney(value).toFixed(2)))];
     }
 
-    function addDuplicateWarning(items, warnings) {
-        const seen = new Set();
-        let duplicates = 0;
-
-        items.forEach(item => {
-            const description = String(item.description || '').toLowerCase().replace(/\s+/g, ' ').trim();
-            const fingerprint = `${description}|${item.quantity}|${Number(item.price).toFixed(2)}`;
-            if (description && seen.has(fingerprint)) duplicates++;
-            seen.add(fingerprint);
-        });
-
-        if (duplicates > 0) {
-            warnings.push('Есть похожие позиции с разных скриншотов. Проверьте их и удалите возможные повторы.');
-        }
-    }
-
     async function processImportFiles(files) {
         const imageFiles = [...files].filter(file => String(file.type || '').startsWith('image/'));
         if (imageFiles.length === 0 || importProcessing) return;
@@ -219,6 +203,7 @@
         let worker = null;
         const freightValues = [];
         const feeValues = [];
+        let removedOverlaps = 0;
 
         try {
             const parser = parserApi();
@@ -240,15 +225,18 @@
                 const result = await worker.recognize(canvas, {}, { text: true, tsv: true });
                 const parsed = parser.parseOrderScreenshotTsv(result.data.tsv, canvas.width, canvas.height);
 
-                parsed.items.forEach(item => {
-                    importState.items.push({
+                const screenshotItems = parsed.items.map(item => ({
                         description: item.description || '',
                         quantity: item.quantity || 1,
                         price: item.price || 0,
                         photo: cropImportPhoto(canvas, item.crop),
                         confidence: item.confidence || 0
-                    });
-                });
+                    }));
+                const merged = parser.mergeScreenshotItems
+                    ? parser.mergeScreenshotItems(importState.items, screenshotItems)
+                    : { items: importState.items.concat(screenshotItems), removed: 0 };
+                importState.items = merged.items;
+                removedOverlaps += merged.removed;
 
                 if (parsed.freight !== null) freightValues.push(parsed.freight);
                 if (parsed.processingFee !== null) feeValues.push(parsed.processingFee);
@@ -272,7 +260,9 @@
                 importState.warnings.push('На скриншотах найдены разные комиссии. Проверьте выбранное значение.');
             }
 
-            addDuplicateWarning(importState.items, importState.warnings);
+            if (removedOverlaps > 0) {
+                importState.warnings.push(`Автоматически убраны повторы на соседних скриншотах: ${removedOverlaps}.`);
+            }
             setImportProgress(100, 'Готово', 'Показываю распознанные данные.');
             renderImportReview();
             setImportView('review');
