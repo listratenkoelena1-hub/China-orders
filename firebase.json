@@ -6,7 +6,7 @@
     "rules": "firestore.rules"
   },
   "hosting": {
-    "public": ".",
+    "public": "public",
     "headers": [
       {
         "source": "/",
@@ -38,9 +38,6 @@
     ],
     "ignore": [
       "firebase.json",
-      "README.md",
-      "firestore.rules",
-      "functions/**",
       "**/.*",
       "**/node_modules/**"
     ]

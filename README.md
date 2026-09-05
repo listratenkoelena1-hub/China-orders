@@ -8,8 +8,8 @@
 
 ## Структура
 
-- `index.html` — веб-приложение.
-- `404.html` — страница ошибки Firebase Hosting.
+- `public/index.html` — веб-приложение.
+- `public/404.html` — страница ошибки Firebase Hosting.
 - `firestore.rules` — правила доступа Firestore.
 - `functions/` — Cloud Functions, включая проверку готовности интеграции 1688.
 
