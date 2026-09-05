@@ -308,8 +308,7 @@ td:not([contenteditable]):not(.photo-cell) {
     margin-bottom: 8px;
 }
 
-.calc-shipping-input,
-.calc-item-input {
+.calc-shipping-input {
     height: 40px;
     border: 1px solid #ddd;
     border-radius: 10px;
@@ -340,11 +339,54 @@ td:not([contenteditable]):not(.photo-cell) {
     -webkit-overflow-scrolling: touch;
 }
 
+.calc-help {
+    color: #666;
+    font-size: 12px;
+    line-height: 1.35;
+    margin: 0 2px 8px;
+}
+
 .calc-row {
     display: grid;
-    grid-template-columns: 1fr 88px;
+    grid-template-columns: 24px minmax(0, 1fr) 88px;
     gap: 8px;
     align-items: center;
+    min-height: 46px;
+    padding: 5px 6px;
+    border: 1px solid #e5e5e5;
+    border-radius: 10px;
+    box-sizing: border-box;
+    cursor: pointer;
+}
+
+.calc-row:has(.calc-checkbox:checked) {
+    border-color: #222;
+    background: #fafafa;
+}
+
+.calc-checkbox {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: black;
+}
+
+.calc-row-info {
+    min-width: 0;
+}
+
+.calc-row-number {
+    display: block;
+    color: #222;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.calc-row-subtotal {
+    display: block;
+    color: #777;
+    font-size: 12px;
+    margin-top: 2px;
 }
 
 .calc-result {
@@ -363,7 +405,22 @@ td:not([contenteditable]):not(.photo-cell) {
     -webkit-user-select: text;
 }
 
-.calc-add-btn {
+.calc-empty {
+    color: #777;
+    font-size: 13px;
+    line-height: 1.4;
+    padding: 12px 6px;
+    text-align: center;
+}
+
+.calc-summary {
+    min-height: 18px;
+    color: #666;
+    font-size: 12px;
+    margin: 8px 2px 0;
+}
+
+.calc-apply-btn {
     width: 100%;
     height: 40px;
     margin-top: 8px;
@@ -371,8 +428,14 @@ td:not([contenteditable]):not(.photo-cell) {
     border-radius: 12px;
     background: black;
     color: white;
-    font-size: 22px;
+    font-size: 14px;
+    font-weight: 700;
     cursor: pointer;
+}
+
+.calc-apply-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
 }
 
 .top-bar {
@@ -613,16 +676,19 @@ input[type="number"] {
             type="number"
             step="0.01"
             inputmode="decimal"
-            placeholder="¥"
+            placeholder="Доставка ¥"
             oninput="recalcCalc()"
         >
-        <button class="calc-icon-btn" type="button" onclick="resetCalc()">↻</button>
-        <button class="calc-icon-btn" type="button" onclick="closeCalc()">✕</button>
+        <button class="calc-icon-btn" type="button" onclick="resetCalc()" title="Сбросить">↻</button>
+        <button class="calc-icon-btn" type="button" onclick="closeCalc()" title="Закрыть">✕</button>
     </div>
 
+    <div class="calc-help">Введите общую доставку магазина и выберите его товары.</div>
     <div class="calc-items" id="calcItems"></div>
-
-    <button class="calc-add-btn" type="button" onclick="addCalcItem()">+</button>
+    <div class="calc-summary" id="calcSummary">Товары не выбраны</div>
+    <button class="calc-apply-btn" id="calcApplyBtn" type="button" onclick="applyCalcToTable()" disabled>
+        Внести в «Дост ¥»
+    </button>
 </div>
     
 <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
@@ -1400,14 +1466,14 @@ async function autoSaveOrder(options = {}) {
         }
     }
 }
-let calcValues = [];
+let calcRows = [];
 
 function toggleCalc() {
     const popover = document.getElementById('calcPopover');
     popover.classList.toggle('hidden');
 
-    if (!popover.classList.contains('hidden') && calcValues.length === 0) {
-        addCalcItem();
+    if (!popover.classList.contains('hidden')) {
+        loadCalcRows();
     }
 }
 
@@ -1417,68 +1483,89 @@ function closeCalc() {
 
 function resetCalc() {
     document.getElementById('calcShipping').value = '';
-    calcValues = [];
+    calcRows.forEach(item => {
+        item.selected = false;
+    });
     renderCalcItems();
 }
 
-function addCalcItem(value = '') {
-    calcValues.push(value);
-    renderCalcItems();
-}
-
-function updateCalcItem(index, value) {
-    calcValues[index] = value;
+function updateCalcSelection(index, selected) {
+    if (!calcRows[index]) return;
+    calcRows[index].selected = selected;
     recalcCalc();
+}
+
+function loadCalcRows() {
+    const selectedRowIndexes = new Set(
+        calcRows.filter(item => item.selected).map(item => item.rowIndex)
+    );
+
+    calcRows = [...document.querySelectorAll('#tbody tr')]
+        .map((row, rowIndex) => {
+            const quantity = parseFloat(row.children[3].innerText) || 0;
+            const price = parseFloat(row.children[4].innerText) || 0;
+
+            return {
+                rowIndex,
+                subtotal: quantity * price,
+                selected: selectedRowIndexes.has(rowIndex)
+            };
+        })
+        .filter(item => item.subtotal > 0);
+
+    renderCalcItems();
 }
 
 function renderCalcItems() {
     const container = document.getElementById('calcItems');
 
-    if (calcValues.length === 0) {
-        calcValues = [''];
+    if (calcRows.length === 0) {
+        container.innerHTML = '<div class="calc-empty">Сначала заполните количество и цену хотя бы у одного товара.</div>';
+        recalcCalc();
+        return;
     }
 
-    container.innerHTML = calcValues.map((value, index) => `
-        <div class="calc-row">
-            <input
-                class="calc-item-input"
-                type="number"
-                step="0.01"
-                inputmode="decimal"
-                placeholder="0"
-                value="${value}"
-                oninput="updateCalcItem(${index}, this.value)"
-            >
+    container.innerHTML = calcRows.map((item, index) => `
+        <label class="calc-row">
+            <input class="calc-checkbox" type="checkbox"
+                ${item.selected ? 'checked' : ''}
+                onchange="updateCalcSelection(${index}, this.checked)">
+            <span class="calc-row-info">
+                <span class="calc-row-number">Строка ${item.rowIndex + 1}</span>
+                <span class="calc-row-subtotal">Товары: ${item.subtotal.toFixed(2)} ¥</span>
+            </span>
             <div class="calc-result" id="calcResult${index}">0.00</div>
-        </div>
+        </label>
     `).join('');
 
     recalcCalc();
 }
 
-function recalcCalc() {
-    const shippingValue = parseFloat(document.getElementById('calcShipping').value) || 0;
+function getCalcDistribution() {
+    const shippingInput = document.getElementById('calcShipping');
+    const shippingValue = parseFloat(shippingInput.value);
+    const hasShippingValue = shippingInput.value.trim() !== ''
+        && Number.isFinite(shippingValue)
+        && shippingValue >= 0;
 
-    const items = calcValues.map((value, index) => ({
-        index,
-        value: parseFloat(value) || 0
-    }));
+    const items = calcRows
+        .map((item, index) => ({ ...item, index }))
+        .filter(item => item.selected && item.subtotal > 0);
 
-    const total = items.reduce((sum, item) => sum + item.value, 0);
-    const results = new Array(items.length).fill(0);
+    const total = items.reduce((sum, item) => sum + item.subtotal, 0);
+    const results = new Array(calcRows.length).fill(0);
 
-    if (shippingValue > 0 && total > 0) {
+    if (hasShippingValue && shippingValue > 0 && total > 0) {
         const shippingCents = Math.round(shippingValue * 100);
 
         let used = 0;
         const calculated = items.map(item => {
-            const raw = shippingCents * item.value / total;
+            const raw = shippingCents * item.subtotal / total;
             const base = Math.floor(raw);
             used += base;
 
             return {
                 index: item.index,
-                value: item.value,
                 base,
                 remainder: raw - base
             };
@@ -1487,8 +1574,8 @@ function recalcCalc() {
         let leftover = shippingCents - used;
 
         calculated.sort((a, b) => {
-            if (a.value !== b.value) return a.value - b.value;
-            return b.remainder - a.remainder;
+            if (a.remainder !== b.remainder) return b.remainder - a.remainder;
+            return a.index - b.index;
         });
 
         for (let i = 0; i < leftover; i++) {
@@ -1500,12 +1587,58 @@ function recalcCalc() {
         });
     }
 
-    results.forEach((value, index) => {
+    return {
+        hasShippingValue,
+        results,
+        selectedCount: items.length,
+        total
+    };
+}
+
+function recalcCalc() {
+    const distribution = getCalcDistribution();
+
+    distribution.results.forEach((value, index) => {
         const resultEl = document.getElementById(`calcResult${index}`);
         if (resultEl) {
             resultEl.innerText = value.toFixed(2);
         }
     });
+
+    const summary = document.getElementById('calcSummary');
+    const applyButton = document.getElementById('calcApplyBtn');
+
+    if (distribution.selectedCount > 0) {
+        summary.innerText = `Выбрано: ${distribution.selectedCount} · товары: ${distribution.total.toFixed(2)} ¥`;
+    } else {
+        summary.innerText = 'Товары не выбраны';
+    }
+
+    applyButton.disabled = !distribution.hasShippingValue || distribution.selectedCount === 0;
+}
+
+function applyCalcToTable() {
+    const distribution = getCalcDistribution();
+    if (!distribution.hasShippingValue || distribution.selectedCount === 0) return;
+
+    const tableRows = [...document.querySelectorAll('#tbody tr')];
+
+    calcRows.forEach((item, index) => {
+        if (!item.selected) return;
+
+        const row = tableRows[item.rowIndex];
+        if (row) {
+            row.children[6].innerText = distribution.results[index].toFixed(2);
+        }
+    });
+
+    calcRows.forEach(item => {
+        item.selected = false;
+    });
+    document.getElementById('calcShipping').value = '';
+
+    recalc();
+    closeCalc();
 }
 
 renderCalcItems();
