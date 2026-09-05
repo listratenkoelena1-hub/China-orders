@@ -244,6 +244,23 @@ td:not([contenteditable]):not(.photo-cell) {
     font-size: 20px;
 }
 
+.import-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.import-toggle-btn svg {
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
 .pdf-btn {
     padding: 0 10px;
     color: #222;
@@ -438,6 +455,423 @@ td:not([contenteditable]):not(.photo-cell) {
     cursor: default;
 }
 
+body.order-import-open {
+    overflow: hidden;
+}
+
+.order-import-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    box-sizing: border-box;
+    background: rgba(0, 0, 0, 0.48);
+}
+
+.order-import-modal.hidden {
+    display: none;
+}
+
+.order-import-dialog {
+    width: min(760px, 100%);
+    max-height: calc(100dvh - 36px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 18px;
+    background: white;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.28);
+}
+
+.order-import-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 16px 12px;
+    border-bottom: 1px solid #e7e7e7;
+}
+
+.order-import-title {
+    margin: 0;
+    color: #111;
+    font-size: 20px;
+    line-height: 1.2;
+}
+
+.order-import-subtitle {
+    margin: 5px 0 0;
+    color: #666;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.order-import-close {
+    width: 38px;
+    height: 38px;
+    flex: 0 0 auto;
+    border: 1px solid #ddd;
+    border-radius: 11px;
+    background: #f3f3f3;
+    color: #222;
+    cursor: pointer;
+    font-size: 18px;
+}
+
+.order-import-close:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.order-import-body {
+    min-height: 0;
+    overflow-y: auto;
+    padding: 16px;
+    -webkit-overflow-scrolling: touch;
+}
+
+.order-import-view.hidden {
+    display: none;
+}
+
+.order-import-picker {
+    min-height: 230px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 22px;
+    border: 2px dashed #cfcfcf;
+    border-radius: 16px;
+    background: #fafafa;
+    text-align: center;
+    box-sizing: border-box;
+}
+
+.order-import-picker-icon {
+    width: 54px;
+    height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #111;
+    color: white;
+    font-size: 28px;
+}
+
+.order-import-picker strong {
+    font-size: 17px;
+}
+
+.order-import-picker p {
+    max-width: 480px;
+    margin: 0;
+    color: #666;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.order-import-primary,
+.order-import-secondary {
+    min-height: 42px;
+    border-radius: 12px;
+    padding: 0 16px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.order-import-primary {
+    border: 0;
+    background: #111;
+    color: white;
+}
+
+.order-import-secondary {
+    border: 1px solid #d6d6d6;
+    background: white;
+    color: #222;
+}
+
+.order-import-primary:disabled,
+.order-import-secondary:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.order-import-privacy {
+    margin: 12px 2px 0;
+    color: #777;
+    font-size: 11px;
+    line-height: 1.4;
+    text-align: center;
+}
+
+.order-import-processing {
+    min-height: 250px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    text-align: center;
+}
+
+.order-import-processing strong {
+    font-size: 17px;
+}
+
+.order-import-processing p {
+    margin: 0;
+    color: #666;
+    font-size: 13px;
+}
+
+.order-import-progress-track {
+    width: min(420px, 100%);
+    height: 10px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #e9e9e9;
+}
+
+.order-import-progress-bar {
+    width: 0;
+    height: 100%;
+    border-radius: inherit;
+    background: #111;
+    transition: width 180ms ease;
+}
+
+.order-import-error {
+    max-width: 520px;
+    color: #b00020;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.order-import-review-intro {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.order-import-review-intro p {
+    margin: 0;
+    color: #555;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.order-import-items {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.order-import-item {
+    position: relative;
+    display: grid;
+    grid-template-columns: 92px minmax(0, 1fr);
+    gap: 12px;
+    padding: 10px 42px 10px 10px;
+    border: 1px solid #dedede;
+    border-radius: 14px;
+    background: #fff;
+}
+
+.order-import-photo {
+    width: 92px;
+    height: 92px;
+    overflow: hidden;
+    border: 1px solid #d8d8d8;
+    border-radius: 11px;
+    padding: 0;
+    background: #f3f3f3;
+    cursor: pointer;
+}
+
+.order-import-photo img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+}
+
+.order-import-photo-placeholder {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    box-sizing: border-box;
+    color: #666;
+    font-size: 11px;
+    line-height: 1.3;
+    text-align: center;
+}
+
+.order-import-item-fields {
+    min-width: 0;
+}
+
+.order-import-description {
+    width: 100%;
+    min-height: 48px;
+    resize: vertical;
+    border: 1px solid #d8d8d8;
+    border-radius: 9px;
+    padding: 7px 8px;
+    box-sizing: border-box;
+    font: inherit;
+    font-size: 13px;
+    line-height: 1.35;
+}
+
+.order-import-numbers {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.order-import-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.order-import-field span {
+    color: #666;
+    font-size: 11px;
+}
+
+.order-import-field input,
+.order-import-field output {
+    width: 100%;
+    height: 36px;
+    margin: 0;
+    border: 1px solid #d8d8d8;
+    border-radius: 8px;
+    padding: 0 8px;
+    box-sizing: border-box;
+    background: white;
+    color: #222;
+    font-size: 14px;
+    line-height: 36px;
+}
+
+.order-import-field output {
+    display: block;
+    background: #f3f3f3;
+}
+
+.order-import-remove {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 30px;
+    height: 30px;
+    border: 0;
+    border-radius: 9px;
+    background: #f2f2f2;
+    color: #555;
+    cursor: pointer;
+    font-size: 17px;
+}
+
+.order-import-empty-items {
+    padding: 24px 12px;
+    border: 1px dashed #ccc;
+    border-radius: 12px;
+    color: #666;
+    font-size: 13px;
+    text-align: center;
+}
+
+.order-import-add-item {
+    width: 100%;
+    margin-top: 10px;
+}
+
+.order-import-fees {
+    margin-top: 14px;
+    padding: 12px;
+    border-radius: 14px;
+    background: #f5f5f5;
+}
+
+.order-import-fee-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.order-import-total {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #ddd;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.order-import-warnings {
+    margin-top: 12px;
+    padding: 10px 12px;
+    border-radius: 11px;
+    background: #fff5d8;
+    color: #684f00;
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.order-import-warnings:empty {
+    display: none;
+}
+
+.order-import-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 12px 16px 16px;
+    border-top: 1px solid #e7e7e7;
+    background: white;
+}
+
+.order-import-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 116px;
+    z-index: 950;
+    max-width: calc(100vw - 32px);
+    transform: translateX(-50%) translateY(12px);
+    padding: 10px 14px;
+    border-radius: 999px;
+    background: #111;
+    color: white;
+    font-size: 13px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.order-import-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
 .top-bar {
     position: sticky;
 }
@@ -466,6 +900,43 @@ input[type="number"] {
     .photo-cell {
         width: 60px;
         height: 72px;
+    }
+
+    .order-import-modal {
+        align-items: flex-end;
+        padding: 0;
+    }
+
+    .order-import-dialog {
+        width: 100%;
+        max-height: 96dvh;
+        border-radius: 18px 18px 0 0;
+    }
+
+    .order-import-header,
+    .order-import-body,
+    .order-import-footer {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .order-import-item {
+        grid-template-columns: 76px minmax(0, 1fr);
+        gap: 9px;
+        padding-left: 8px;
+    }
+
+    .order-import-photo {
+        width: 76px;
+        height: 76px;
+    }
+
+    .order-import-numbers {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .order-import-numbers .order-import-field:last-child {
+        grid-column: 1 / -1;
     }
 }
 
@@ -613,7 +1084,13 @@ input[type="number"] {
         <div class="page-title" id="pageTitle">Название</div>
         <div class="calc-toggle-wrap">
             <button class="account-btn" type="button" id="accountBtn" onclick="signOutGoogle()" title="Выйти" hidden>Выйти</button>
-            <button class="calc-toggle-btn" type="button" onclick="toggleCalc()">🧮</button>
+            <button class="calc-toggle-btn import-toggle-btn" type="button" onclick="openOrderImport()" title="Импорт заказа из скриншота" aria-label="Импорт заказа из скриншота">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 3v11"></path>
+                    <path d="m8 10 4 4 4-4"></path>
+                    <path d="M5 17v3h14v-3"></path>
+                </svg>
+            </button>
             <button class="pdf-btn" type="button" id="manualSaveBtn" onclick="manualSaveOrder()">Save</button>
             <button class="account-btn pdf-select-btn" type="button" id="selectAllPdfBtn" onclick="toggleAllPdfRows()">Выбрать все</button>
             <button class="pdf-btn" type="button" id="pdfBtn" onclick="savePdf()">PDF</button>
@@ -690,6 +1167,78 @@ input[type="number"] {
         Внести в «Дост ¥»
     </button>
 </div>
+
+<div class="order-import-modal hidden" id="orderImportModal" role="dialog" aria-modal="true" aria-labelledby="orderImportTitle">
+    <div class="order-import-dialog">
+        <div class="order-import-header">
+            <div>
+                <h2 class="order-import-title" id="orderImportTitle">Импорт из скриншота 1688</h2>
+                <p class="order-import-subtitle">Фото, количество, фактическая цена, фрахт и комиссия — с проверкой перед добавлением.</p>
+            </div>
+            <button class="order-import-close" id="orderImportCloseBtn" type="button" onclick="closeOrderImport()" aria-label="Закрыть">✕</button>
+        </div>
+
+        <div class="order-import-body">
+            <section class="order-import-view" id="orderImportStartView">
+                <div class="order-import-picker">
+                    <div class="order-import-picker-icon" aria-hidden="true">⇩</div>
+                    <strong>Выберите скриншоты заказа</strong>
+                    <p>Можно выбрать сразу несколько изображений одного заказа. PDF создавать не нужно.</p>
+                    <button class="order-import-primary" type="button" onclick="chooseOrderImportScreenshots()">Выбрать изображения</button>
+                </div>
+                <p class="order-import-privacy">Распознавание выполняется в браузере. Полные скриншоты в заказе не сохраняются.</p>
+            </section>
+
+            <section class="order-import-view hidden order-import-processing" id="orderImportProcessingView">
+                <strong id="orderImportProgressTitle">Подготавливаю распознавание…</strong>
+                <div class="order-import-progress-track" aria-hidden="true">
+                    <div class="order-import-progress-bar" id="orderImportProgressBar"></div>
+                </div>
+                <p id="orderImportProgressText">Первый запуск может занять немного больше времени.</p>
+                <div class="order-import-error" id="orderImportError"></div>
+                <button class="order-import-secondary hidden" id="orderImportRetryBtn" type="button" onclick="chooseOrderImportScreenshots()">Выбрать другие изображения</button>
+            </section>
+
+            <section class="order-import-view hidden" id="orderImportReviewView">
+                <div class="order-import-review-intro">
+                    <p id="orderImportReviewText">Проверьте распознанные данные. Всё можно изменить.</p>
+                    <button class="order-import-secondary" type="button" onclick="chooseOrderImportScreenshots()">Заново</button>
+                </div>
+
+                <div class="order-import-items" id="orderImportItems"></div>
+                <button class="order-import-secondary order-import-add-item" type="button" onclick="addOrderImportItem()">+ Добавить товар вручную</button>
+
+                <div class="order-import-fees">
+                    <div class="order-import-fee-grid">
+                        <label class="order-import-field">
+                            <span>Фрахт, ¥</span>
+                            <input id="orderImportFreight" type="number" step="0.01" inputmode="decimal" oninput="updateOrderImportTotals()">
+                        </label>
+                        <label class="order-import-field">
+                            <span>Комиссия в юанях, ¥</span>
+                            <input id="orderImportFee" type="number" step="0.01" inputmode="decimal" oninput="updateOrderImportTotals()">
+                        </label>
+                    </div>
+                    <div class="order-import-total">
+                        <span>Общая доставка</span>
+                        <output id="orderImportShippingTotal">0.00 ¥</output>
+                    </div>
+                </div>
+
+                <div class="order-import-warnings" id="orderImportWarnings"></div>
+            </section>
+        </div>
+
+        <div class="order-import-footer hidden" id="orderImportFooter">
+            <button class="order-import-secondary" type="button" onclick="closeOrderImport()">Отмена</button>
+            <button class="order-import-primary" id="orderImportApplyBtn" type="button" onclick="applyOrderImport()">Добавить в таблицу</button>
+        </div>
+    </div>
+</div>
+
+<div class="order-import-toast" id="orderImportToast" role="status"></div>
+<input type="file" id="orderImportFileInput" accept="image/*" multiple style="display:none" onchange="handleOrderImportFiles(this.files)">
+<input type="file" id="orderImportPhotoInput" accept="image/*" style="display:none" onchange="handleOrderImportPhoto(this.files)">
     
 <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -1921,6 +2470,8 @@ async function savePdf() {
 
     
 </script>
+<script src="order-import-parser.js"></script>
+<script src="order-import.js"></script>
 
 </body>
 </html>
