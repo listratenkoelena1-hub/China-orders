@@ -843,11 +843,32 @@ body.order-import-open {
 
 .order-import-footer {
     display: flex;
-    justify-content: flex-end;
+    align-items: center;
+    justify-content: space-between;
     gap: 10px;
     padding: 12px 16px 16px;
     border-top: 1px solid #e7e7e7;
     background: white;
+}
+
+.order-import-footer-actions {
+    display: flex;
+    gap: 10px;
+    margin-left: auto;
+}
+
+.order-import-more-screenshots {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    margin-right: auto;
+}
+
+.order-import-more-screenshots span {
+    font-size: 20px;
+    font-weight: 500;
+    line-height: 1;
 }
 
 .order-import-toast {
@@ -937,6 +958,19 @@ input[type="number"] {
 
     .order-import-numbers .order-import-field:last-child {
         grid-column: 1 / -1;
+    }
+
+    .order-import-footer {
+        flex-wrap: wrap;
+    }
+
+    .order-import-more-screenshots,
+    .order-import-footer-actions {
+        width: 100%;
+    }
+
+    .order-import-footer-actions .order-import-primary {
+        flex: 1;
     }
 }
 
@@ -1196,7 +1230,7 @@ input[type="number"] {
                 </div>
                 <p id="orderImportProgressText">Первый запуск может занять немного больше времени.</p>
                 <div class="order-import-error" id="orderImportError"></div>
-                <button class="order-import-secondary hidden" id="orderImportRetryBtn" type="button" onclick="chooseOrderImportScreenshots()">Выбрать другие изображения</button>
+                <button class="order-import-secondary hidden" id="orderImportRetryBtn" type="button" onclick="retryOrderImportScreenshots()">Выбрать другие изображения</button>
             </section>
 
             <section class="order-import-view hidden" id="orderImportReviewView">
@@ -1230,8 +1264,14 @@ input[type="number"] {
         </div>
 
         <div class="order-import-footer hidden" id="orderImportFooter">
-            <button class="order-import-secondary" type="button" onclick="closeOrderImport()">Отмена</button>
-            <button class="order-import-primary" id="orderImportApplyBtn" type="button" onclick="applyOrderImport()">Добавить в таблицу</button>
+            <button class="order-import-secondary order-import-more-screenshots" type="button" onclick="chooseAdditionalOrderImportScreenshots()">
+                <span aria-hidden="true">＋</span>
+                Добавить скриншоты
+            </button>
+            <div class="order-import-footer-actions">
+                <button class="order-import-secondary" type="button" onclick="closeOrderImport()">Отмена</button>
+                <button class="order-import-primary" id="orderImportApplyBtn" type="button" onclick="applyOrderImport()">Добавить в таблицу</button>
+            </div>
         </div>
     </div>
 </div>

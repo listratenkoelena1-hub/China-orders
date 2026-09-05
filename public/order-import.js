@@ -10,6 +10,8 @@
     let importProcessing = false;
     let replacementPhotoIndex = -1;
     let importProgressContext = { fileIndex: 0, fileCount: 1 };
+    let pendingImportMode = 'replace';
+    let retryImportMode = 'replace';
     let toastTimeout;
     let importState = emptyImportState();
 
@@ -182,12 +184,22 @@
         return [...new Set(values.map(value => roundImportMoney(value).toFixed(2)))];
     }
 
-    async function processImportFiles(files) {
+    async function processImportFiles(files, options = {}) {
         const imageFiles = [...files].filter(file => String(file.type || '').startsWith('image/'));
         if (imageFiles.length === 0 || importProcessing) return;
 
-        importState = emptyImportState();
-        importState.sourceCount = imageFiles.length;
+        const appendToCurrent = Boolean(options.append);
+        const existingItems = appendToCurrent ? [...importState.items] : [];
+        const existingWarnings = appendToCurrent ? [...importState.warnings] : [];
+        const existingSourceCount = appendToCurrent ? importState.sourceCount : 0;
+        const existingFreight = appendToCurrent
+            ? (document.getElementById('orderImportFreight')?.value ?? importState.freight)
+            : '';
+        const existingFee = appendToCurrent
+            ? (document.getElementById('orderImportFee')?.value ?? importState.processingFee)
+            : '';
+
+        if (!appendToCurrent) importState = emptyImportState();
         importProcessing = true;
 
         const closeButton = document.getElementById('orderImportCloseBtn');
@@ -198,11 +210,19 @@
         if (errorElement) errorElement.innerText = '';
 
         setImportView('processing');
-        setImportProgress(0, 'Подготавливаю распознавание…', 'Первый запуск может занять немного больше времени.');
+        setImportProgress(
+            0,
+            appendToCurrent ? 'Добавляю скриншоты…' : 'Подготавливаю распознавание…',
+            appendToCurrent
+                ? 'Уже найденные и исправленные товары сохранятся.'
+                : 'Первый запуск может занять немного больше времени.'
+        );
 
         let worker = null;
         const freightValues = [];
         const feeValues = [];
+        const batchWarnings = [];
+        let batchItems = [];
         let removedOverlaps = 0;
 
         try {
@@ -233,46 +253,73 @@
                         confidence: item.confidence || 0
                     }));
                 const merged = parser.mergeScreenshotItems
-                    ? parser.mergeScreenshotItems(importState.items, screenshotItems)
-                    : { items: importState.items.concat(screenshotItems), removed: 0 };
-                importState.items = merged.items;
+                    ? parser.mergeScreenshotItems(batchItems, screenshotItems)
+                    : { items: batchItems.concat(screenshotItems), removed: 0 };
+                batchItems = merged.items;
                 removedOverlaps += merged.removed;
 
                 if (parsed.freight !== null) freightValues.push(parsed.freight);
                 if (parsed.processingFee !== null) feeValues.push(parsed.processingFee);
                 if (parsed.items.length === 0) {
-                    importState.warnings.push(`На изображении ${index + 1} товары не распознаны.`);
+                    batchWarnings.push(`На изображении ${index + 1} товары не распознаны.`);
                 }
             }
 
-            importState.freight = freightValues.length > 0 ? freightValues[freightValues.length - 1] : '';
-            importState.processingFee = feeValues.length > 0 ? feeValues[feeValues.length - 1] : '';
+            importState.items = existingItems.concat(batchItems);
+            importState.sourceCount = existingSourceCount + imageFiles.length;
+            importState.freight = appendToCurrent && existingFreight !== ''
+                ? existingFreight
+                : (freightValues.length > 0 ? freightValues[freightValues.length - 1] : '');
+            importState.processingFee = appendToCurrent && existingFee !== ''
+                ? existingFee
+                : (feeValues.length > 0 ? feeValues[feeValues.length - 1] : '');
+            importState.warnings = batchWarnings;
 
-            if (freightValues.length === 0) {
+            const comparedFreightValues = [...freightValues];
+            const comparedFeeValues = [...feeValues];
+            if (appendToCurrent && existingFreight !== '') comparedFreightValues.unshift(importMoney(existingFreight));
+            if (appendToCurrent && existingFee !== '') comparedFeeValues.unshift(importMoney(existingFee));
+
+            if (importState.freight === '') {
                 importState.warnings.push('Фрахт не распознан — введите его вручную.');
-            } else if (uniqueMoneyValues(freightValues).length > 1) {
+            } else if (uniqueMoneyValues(comparedFreightValues).length > 1) {
                 importState.warnings.push('На скриншотах найдены разные суммы фрахта. Проверьте выбранное значение.');
             }
 
-            if (feeValues.length === 0) {
+            if (importState.processingFee === '') {
                 importState.warnings.push('Комиссия в юанях не распознана — при необходимости введите её вручную.');
-            } else if (uniqueMoneyValues(feeValues).length > 1) {
+            } else if (uniqueMoneyValues(comparedFeeValues).length > 1) {
                 importState.warnings.push('На скриншотах найдены разные комиссии. Проверьте выбранное значение.');
             }
 
             if (removedOverlaps > 0) {
                 importState.warnings.push(`Автоматически убраны повторы на соседних скриншотах: ${removedOverlaps}.`);
             }
+            if (appendToCurrent) {
+                importState.warnings.push(
+                    `С новых скриншотов добавлено товаров: ${batchItems.length}. Повторы с прежними позициями оставлены — их можно удалить крестиком.`
+                );
+            }
             setImportProgress(100, 'Готово', 'Показываю распознанные данные.');
             renderImportReview();
             setImportView('review');
         } catch (error) {
             console.error('Order screenshot import error', error);
-            if (errorElement) {
-                errorElement.innerText = error?.message || 'Не удалось распознать скриншот. Попробуйте ещё раз.';
+            if (appendToCurrent) {
+                importState.items = existingItems;
+                importState.freight = existingFreight;
+                importState.processingFee = existingFee;
+                importState.sourceCount = existingSourceCount;
+                importState.warnings = existingWarnings.concat('Новые скриншоты не удалось обработать. Уже найденные товары сохранены.');
+                renderImportReview();
+                setImportView('review');
+            } else {
+                if (errorElement) {
+                    errorElement.innerText = error?.message || 'Не удалось распознать скриншот. Попробуйте ещё раз.';
+                }
+                if (retryButton) retryButton.classList.remove('hidden');
+                setImportProgress(0, 'Не удалось распознать', 'Скриншот не был добавлен в таблицу.');
             }
-            if (retryButton) retryButton.classList.remove('hidden');
-            setImportProgress(0, 'Не удалось распознать', 'Скриншот не был добавлен в таблицу.');
         } finally {
             if (worker) {
                 try {
@@ -420,6 +467,8 @@
         if (typeof closeCalc === 'function') closeCalc();
         importState = emptyImportState();
         replacementPhotoIndex = -1;
+        pendingImportMode = 'replace';
+        retryImportMode = 'replace';
 
         const modal = document.getElementById('orderImportModal');
         const errorElement = document.getElementById('orderImportError');
@@ -438,21 +487,38 @@
         document.body.classList.remove('order-import-open');
         importState = emptyImportState();
         replacementPhotoIndex = -1;
+        pendingImportMode = 'replace';
+        retryImportMode = 'replace';
     };
 
-    window.chooseOrderImportScreenshots = function () {
+    function chooseOrderImportScreenshotsForMode(mode) {
         if (importProcessing) return;
         const input = document.getElementById('orderImportFileInput');
         if (!input) return;
+        pendingImportMode = mode;
         input.value = '';
         input.click();
+    }
+
+    window.chooseOrderImportScreenshots = function () {
+        chooseOrderImportScreenshotsForMode('replace');
+    };
+
+    window.chooseAdditionalOrderImportScreenshots = function () {
+        chooseOrderImportScreenshotsForMode('append');
+    };
+
+    window.retryOrderImportScreenshots = function () {
+        chooseOrderImportScreenshotsForMode(retryImportMode);
     };
 
     window.handleOrderImportFiles = function (fileList) {
         const files = [...(fileList || [])];
+        const mode = pendingImportMode;
         const input = document.getElementById('orderImportFileInput');
         if (input) input.value = '';
-        processImportFiles(files);
+        retryImportMode = mode;
+        processImportFiles(files, { append: mode === 'append' });
     };
 
     window.updateOrderImportItem = function (index, field, value) {
